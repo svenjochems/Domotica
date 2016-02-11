@@ -3,6 +3,7 @@ package be.jochems.sven.domotica;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -35,16 +36,12 @@ public class MainActivity extends AppCompatActivity {
     private int[][]     outputIndex;
     private int[][]     outputIcon;
 
-    Intent settings;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        settings = new Intent(this,SettingsActivity.class);
 
         text = (TextView) findViewById(R.id.txtReceive);
 
@@ -56,20 +53,9 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("Done","Done");
             }
         });
-
-
-
-       /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
     }
 
-    private void importData(){
+    public void importData(){
         setGroups();
         setOutputs(numberOfModules);
         setMoods();
@@ -188,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            startActivity(settings);
+            startActivity(new Intent(this,SettingsActivity.class));
             return true;
         } else if (id == R.id.action_exit){
             finish();
