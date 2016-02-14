@@ -25,6 +25,7 @@ import android.view.MenuItem;
 import android.widget.Button;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -70,7 +71,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
     };
 
-    private static Preference.OnPreferenceClickListener a = new Preference.OnPreferenceClickListener() {
+    /*private static Preference.OnPreferenceClickListener a = new Preference.OnPreferenceClickListener() {
         @Override
         public boolean onPreferenceClick(Preference preference) {
             if (preference.getKey().equals("import")){
@@ -80,7 +81,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
             return false;
         }
-    };
+    };*/
 
 
     /**
@@ -104,7 +105,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     private static void bindPreferenceSummaryToValue(Preference preference) {
         // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
-        preference.setOnPreferenceClickListener(a);
+        //preference.setOnPreferenceClickListener(a);
 
         // Trigger the listener immediately with the preference's
         // current value.
@@ -113,7 +114,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                         .getDefaultSharedPreferences(preference.getContext())
                         .getString(preference.getKey(), ""));
 
-        a.onPreferenceClick(preference);
+        //a.onPreferenceClick(preference);
     }
 
     @Override
@@ -226,6 +227,22 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // updated to reflect the new value, per the Android Design
             // guidelines.
             bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_key_import)));
+
+            Preference.OnPreferenceClickListener listener = new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    MainActivity m = new MainActivity();
+                    Log.d("Listener","Import");
+                    //final Context context = GeneralPreferenceFragment.this;
+                    //return m.importData();
+                    //TODO: fix import data from settings (pass context?)
+                    return true;
+                }
+            };
+
+            Preference prefImport = findPreference(getString(R.string.pref_key_import));
+            prefImport.setOnPreferenceClickListener(listener);
+
         }
 
         @Override

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="be.jochems.sven.domotica.OutputWidgetConfigureActivity"
+    android:initialKeyguardLayout="@layout/output_widget"
+    android:initialLayout="@layout/output_widget"
+    android:minHeight="80dp"
+    android:minWidth="80dp"
+    android:previewImage="@drawable/example_appwidget_preview"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="86400000"
+    android:widgetCategory="home_screen|keyguard"></appwidget-provider>

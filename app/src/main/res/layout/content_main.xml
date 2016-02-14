@@ -20,19 +20,20 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true">
 
-        <ToggleButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Lamp"
-            android:id="@+id/btnLamp"
-            android:layout_gravity="center_horizontal"
-            android:checked="false" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <ListView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="text"
-            android:id="@+id/txtReceive"
-            android:layout_gravity="center_horizontal" />
+            android:id="@+id/lstGroups"
+            android:layout_gravity="center_horizontal"
+            android:choiceMode="none" />
+
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:id="@+id/lstOutputs"
+            android:layout_gravity="center_horizontal"
+            android:choiceMode="none" />
     </LinearLayout>
 </RelativeLayout>
