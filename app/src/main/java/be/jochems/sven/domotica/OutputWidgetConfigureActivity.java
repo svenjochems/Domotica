@@ -28,6 +28,7 @@ public class OutputWidgetConfigureActivity extends Activity {
     private ListView lstWidgetOutputs;
     private ArrayAdapter<String> adpGroups;
     private ArrayAdapter<String> adpOutputs;
+    private Domotica application;
 
     public OutputWidgetConfigureActivity() {
         super();
@@ -97,13 +98,13 @@ public class OutputWidgetConfigureActivity extends Activity {
         lstWidgetGroups = (ListView) findViewById(R.id.lstWidgetGroups);
         lstWidgetOutputs = (ListView) findViewById(R.id.lstWidgetOutputs);
 
-        final MainActivity main = new MainActivity();
-        final Context context = OutputWidgetConfigureActivity.this;
-        final String[] groups = main.loadStringArray(context, "groups");
-        final String[][] outputs = main.load2dStringArray(context, "outputs");
-        final String[] moods = main.loadStringArray(context, "moods");
-        final int[][] outputIndex = main.load2dIntArray(context, "index");
-        final int[][] outputIcon = main.load2dIntArray(context, "icon");
+        application = (Domotica)getApplicationContext();
+
+        final String[] groups = application.getGroups();
+        final String[][] outputs = application.getOutputs();
+        final String[] moods = application.getMoods();
+        final int[][] outputIndex = application.getOutputIndex();
+        final int[][] outputIcon = application.getOutputIcon();
 
 
         adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, groups);
@@ -124,7 +125,7 @@ public class OutputWidgetConfigureActivity extends Activity {
                     }
                 }
 
-                adpOutputs = new ArrayAdapter<String>(OutputWidgetConfigureActivity.this, android.R.layout.simple_list_item_1, outputList);
+                adpOutputs = new ArrayAdapter<>(OutputWidgetConfigureActivity.this, android.R.layout.simple_list_item_1, outputList);
                 lstWidgetOutputs.setAdapter(adpOutputs);
                 lstWidgetOutputs.setVisibility(View.VISIBLE);
 
@@ -165,9 +166,6 @@ public class OutputWidgetConfigureActivity extends Activity {
                     resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
                     setResult(RESULT_OK, resultValue);
                     finish();
-
-                    //boolean test = toggleOutput(module, address);
-                    //main.closeConnection();
                 }
             }
         });

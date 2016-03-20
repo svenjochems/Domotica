@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-import android.widget.ImageButton;
 import android.widget.RemoteViews;
 
 /**
@@ -14,24 +13,26 @@ import android.widget.RemoteViews;
  * App Widget Configuration implemented in {@link OutputWidgetConfigureActivity OutputWidgetConfigureActivity}
  */
 public class OutputWidget extends AppWidgetProvider {
-    public static String WIDGET_BUTTON = "android.appwidget.action.APPWIDGET_BUTTON";
-
+    public static String APPWIDGET_BUTTON = "android.appwidget.action.APPWIDGET_BUTTON";
+    private static final String ACTION = "toggleOutput_";
+    private Domotica application;
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
 
-        //CharSequence widgetText = OutputWidgetConfigureActivity.loadTitlePref(context, appWidgetId);
         int module = OutputWidgetConfigureActivity.loadModulePref(context, appWidgetId);
         int address = OutputWidgetConfigureActivity.loadAddrPref(context, appWidgetId);
         String name = OutputWidgetConfigureActivity.loadNamePref(context, appWidgetId);
 
-
+        //
+        Intent intent = new Intent(context, OutputWidget.class);
+        intent.setAction(ACTION + module + "_" + address);
+        PendingIntent pendingIntent =  PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.output_widget);
         views.setTextViewText(R.id.appwidget_text, name);
-
-
+        views.setOnClickPendingIntent(R.id.appwidget_button, pendingIntent);
 
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -40,16 +41,10 @@ public class OutputWidget extends AppWidgetProvider {
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         // There may be multiple widgets active, so update all of them
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.output_widget);
-        Intent intent = new Intent(WIDGET_BUTTON);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        views.setOnClickPendingIntent(R.id.appwidget_text, pendingIntent);
-        //TODO: Fix widget onclick
-
         for (int appWidgetId : appWidgetIds) {
+
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
-
     }
 
     @Override
@@ -72,12 +67,18 @@ public class OutputWidget extends AppWidgetProvider {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        super.onReceive(context, intent);
-        Log.d("Click", "Widget clicked");
-        if (WIDGET_BUTTON.equals(intent.getAction())) {
-            Log.d("Click", "Widget button clicked ");
+        if (intent.getAction().startsWith(ACTION)) {
+            application = (Domotica)context.getApplicationContext();
 
+            String[] actions = intent.getAction().split("_");
+            int module = Integer.parseInt(actions[1]);
+            int address = Integer.parseInt(actions[2]);
+
+            Log.d("Toggle", "module:" + module + ", address:" + address);
+            application.toggleOutput(module, address);
         }
+
+        super.onReceive(context, intent);
     }
 }
 
