@@ -15,7 +15,6 @@ import android.widget.RemoteViews;
 public class OutputWidget extends AppWidgetProvider {
     public static String APPWIDGET_BUTTON = "android.appwidget.action.APPWIDGET_BUTTON";
     private static final String ACTION = "toggleOutput_";
-    private Domotica application;
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
@@ -68,14 +67,14 @@ public class OutputWidget extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().startsWith(ACTION)) {
-            application = (Domotica)context.getApplicationContext();
+            Connection con = new Connection(context);
 
             String[] actions = intent.getAction().split("_");
             int module = Integer.parseInt(actions[1]);
             int address = Integer.parseInt(actions[2]);
 
             Log.d("Toggle", "module:" + module + ", address:" + address);
-            application.toggleOutput(module, address);
+            con.toggleOutput(module, address);
         }
 
         super.onReceive(context, intent);

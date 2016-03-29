@@ -26,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter<String> adpOutputs;
 
     private Domotica application;
+    private Connection con;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,52 +39,50 @@ public class MainActivity extends AppCompatActivity {
         lstOutputs = (ListView) findViewById(R.id.lstOutputs);
 
         application = (Domotica)getApplicationContext();
-        boolean data = application.loadData();
+        con = new Connection(getApplicationContext());
 
-        if (data) {
-            String[] groups = application.getGroups();
-            String[] lstData  = Arrays.copyOf(groups, groups.length + 1);
-            lstData[lstData.length - 1] = getString(R.string.lstMoods);
+        String[] groups = application.getGroups();
+        String[] lstData = Arrays.copyOf(groups, groups.length + 1);
+        lstData[lstData.length - 1] = getString(R.string.lstMoods);
 
-            adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lstData);
-            lstGroups.setAdapter(adpGroups);
+        adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lstData);
+        lstGroups.setAdapter(adpGroups);
 
-            lstGroups.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    lstGroups.setVisibility(View.GONE);
-                    List<String> outputList = new ArrayList<>();
+        lstGroups.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                lstGroups.setVisibility(View.GONE);
+                List<String> outputList = new ArrayList<>();
 
-                    outputList.add(getString(R.string.lstBack));
+                outputList.add(getString(R.string.lstBack));
 
-                    // Load moods
-                    if (((String) parent.getItemAtPosition(position)).equals(getString(R.string.lstMoods))){
+                // Load moods
+                if ((parent.getItemAtPosition(position)).equals(getString(R.string.lstMoods))) {
 
-                        String[] moods = application.getMoods();
-                        for (int i = 0; i < moods.length; i++){
-                            outputList.add(moods[i]);
-                        }
-
-                    // Load outputs
-                    } else {
-
-                        int[][] outputIndex = application.getOutputIndex();
-                        String[][] outputs = application.getOutputs();
-
-                        for (int i = 0; i < outputIndex.length; i++) {
-                            for (int j = 0; j < outputIndex[i].length; j++) {
-                                if (outputIndex[i][j] == position)
-                                    outputList.add(outputs[i][j]);
-                            }
-                        }
+                    String[] moods = application.getMoods();
+                    for (int i = 0; i < moods.length; i++) {
+                        outputList.add(moods[i]);
                     }
 
-                    adpOutputs = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, outputList);
-                    lstOutputs.setAdapter(adpOutputs);
-                    lstOutputs.setVisibility(View.VISIBLE);
+                    // Load outputs
+                } else {
+
+                    int[][] outputIndex = application.getOutputIndex();
+                    String[][] outputs = application.getOutputs();
+
+                    for (int i = 0; i < outputIndex.length; i++) {
+                        for (int j = 0; j < outputIndex[i].length; j++) {
+                            if (outputIndex[i][j] == position)
+                                outputList.add(outputs[i][j]);
+                        }
+                    }
                 }
-            });
-        }
+
+                adpOutputs = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, outputList);
+                lstOutputs.setAdapter(adpOutputs);
+                lstOutputs.setVisibility(View.VISIBLE);
+            }
+        });
 
         lstOutputs.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -108,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    boolean test = application.toggleMood(address);
+                    boolean test = con.toggleMood(address);
 
                 // Groups
                 } else {
@@ -125,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                     }
-                    boolean test = application.toggleOutput(module, address);
+                    boolean test = con.toggleOutput(module, address);
                 }
             }
         });
