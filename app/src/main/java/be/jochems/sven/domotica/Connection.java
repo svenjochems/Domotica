@@ -1,7 +1,6 @@
 package be.jochems.sven.domotica;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
@@ -23,7 +22,7 @@ import java.util.Arrays;
  */
 public class Connection {
 
-    private final static int numberOfModules = 2;
+    private final static int NUMBER_OF_MODULES = 2;
 
     private String[]    groups;
     private String[][]  outputs;
@@ -55,7 +54,7 @@ public class Connection {
     // Import all data in memory at once, avoid multiple tcp connections
     public boolean importData(){
         boolean gr = loadGroups();
-        boolean ou = loadOutputs(numberOfModules);
+        boolean ou = loadOutputs(NUMBER_OF_MODULES);
         boolean mo = loadMoods();
         boolean co = closeConnection();
 
@@ -72,7 +71,7 @@ public class Connection {
 
     public String[][] getOutputs() {
         if (outputs == null){
-            loadOutputs(numberOfModules);
+            loadOutputs(NUMBER_OF_MODULES);
             closeConnection();
         }
         return outputs;
@@ -88,7 +87,7 @@ public class Connection {
 
     public int[][] getOutputIndex() {
         if (outputIndex == null){
-            loadOutputs(numberOfModules);
+            loadOutputs(NUMBER_OF_MODULES);
             closeConnection();
         }
         return outputIndex;
@@ -96,7 +95,7 @@ public class Connection {
 
     public int[][] getOutputIcon() {
         if (outputIcon == null){
-            loadOutputs(numberOfModules);
+            loadOutputs(NUMBER_OF_MODULES);
             closeConnection();
         }
         return outputIcon;
@@ -256,6 +255,38 @@ public class Connection {
             closeConnection();
         }
         return true;
+    }
+
+    public byte[][] getStatus(){
+        byte[][] receive = new byte[NUMBER_OF_MODULES][];
+
+        try {
+
+            for (int i = 0; i < NUMBER_OF_MODULES; i++) {
+                int module = i+1;
+                byte[] sendData = new byte[]{(byte)175, (byte)1, (byte)8, (byte)module, (byte)0, (byte)0, (byte)0, (byte)1,
+                        (byte)0, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)175};
+
+                byte[] rec = new Network().execute(sendData).get();
+                Log.i("Get status", "Module " + module);
+
+                // trim unused addresses
+                int lastIndex = -1;
+                for (int j = 0; j < rec.length; j++){
+                    if (rec[j] == (byte)255 ){
+                        lastIndex = j;
+                        break;
+                    }
+                }
+                receive[i] = Arrays.copyOf(rec, lastIndex);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        } finally {
+            closeConnection();
+        }
+        return receive;
     }
 
     private class Network extends AsyncTask<byte[], String, byte[]> {
