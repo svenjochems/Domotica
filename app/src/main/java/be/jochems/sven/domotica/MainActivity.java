@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Fields
     private ArrayAdapter<String> adpGroups;
-    private ArrayAdapter<String> adpOutputs;
+    private OutputListAdapter adpOutputs;
 
     private Domotica application;
     private Connection con;
@@ -48,20 +49,24 @@ public class MainActivity extends AppCompatActivity {
         adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lstData);
         lstGroups.setAdapter(adpGroups);
 
+        // load list with moods or outputs
         lstGroups.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 lstGroups.setVisibility(View.GONE);
-                List<String> outputList = new ArrayList<>();
 
-                outputList.add(getString(R.string.lstBack));
+                // load outputstatus
+                byte[][] status = con.getStatus();
+
+                ArrayList<OutputListItem> outputList = new ArrayList<>();
 
                 // Load moods
                 if ((parent.getItemAtPosition(position)).equals(getString(R.string.lstMoods))) {
 
                     String[] moods = application.getMoods();
                     for (int i = 0; i < moods.length; i++) {
-                        outputList.add(moods[i]);
+                        OutputListItem item = new OutputListItem(R.drawable.mood_off, moods[i]);
+                        outputList.add(item);
                     }
 
                     // Load outputs
@@ -69,45 +74,48 @@ public class MainActivity extends AppCompatActivity {
 
                     int[][] outputIndex = application.getOutputIndex();
                     String[][] outputs = application.getOutputs();
+                    int[][] outputIcon = application.getOutputIcon();
+
 
                     for (int i = 0; i < outputIndex.length; i++) {
                         for (int j = 0; j < outputIndex[i].length; j++) {
-                            if (outputIndex[i][j] == position)
-                                outputList.add(outputs[i][j]);
+                            if (outputIndex[i][j] == position) {
+                                OutputListItem outputListItem = constructListItem(outputs[i][j], outputIcon[i][j], status[i][j]);
+                                outputList.add(outputListItem);
+                            }
                         }
                     }
                 }
 
-                adpOutputs = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, outputList);
+                adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, outputList);
                 lstOutputs.setAdapter(adpOutputs);
                 lstOutputs.setVisibility(View.VISIBLE);
             }
         });
 
+        // perform action on list
         lstOutputs.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String data = (String) parent.getItemAtPosition(position);
-
-                // Back button
-                if (data.equals(getString(R.string.lstBack))) {
-                    lstOutputs.setVisibility(View.GONE);
-                    lstGroups.setVisibility(View.VISIBLE);
+                OutputListItem data = (OutputListItem) parent.getItemAtPosition(position);
+                String name = data.getText();
 
                 // Moods
                     // TODO: data is not called moods but names in the moods
                     // TODO: Generalise loaded data
-                } else if (data.equals(getString(R.string.lstMoods))) {
+                if (name.equals(getString(R.string.lstMoods))) {
                     int address = -1;
                     String[] moods = application.getMoods();
 
                     for (int i = 0; i < moods.length; i++){
-                        if (moods[i].equals(data)){
+                        if (moods[i].equals(name)){
                             address = i;
                             break;
                         }
                     }
                     boolean test = con.toggleMood(address);
+                    //TODO: refresh status
+                    //TODO: change begin list layout (simple_list_layout?)
 
                 // Groups
                 } else {
@@ -117,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
 
                     for (int i = 0; i < outputs.length; i++) {
                         for (int j = 0; j < outputs[i].length; j++) {
-                            if (outputs[i][j].equals(data)) {
+                            if (outputs[i][j].equals(name)) {
                                 module = i + 1;
                                 address = j;
                                 break;
@@ -125,12 +133,43 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                     boolean test = con.toggleOutput(module, address);
+                    // TODO: refresh status
                 }
             }
         });
     }
 
+    private OutputListItem constructListItem(String name, int type, byte status){
+        int img = getImageResource(type, status);
+        OutputListItem item = new OutputListItem(img, name);
+        return item;
+    }
 
+    private int getImageResource(int type, byte status){
+        int[] outputImage = new int[]{
+                R.drawable.light_out,
+                R.drawable.light_on,
+                R.drawable.plug_out,
+                R.drawable.plug_on,
+                R.drawable.fan_out,
+                R.drawable.fan_on,
+                R.drawable.mood_off,
+                R.drawable.mood_on
+        };
+        return outputImage[type * 2 + status];
+    }
+
+    @Override
+    public void onBackPressed() {
+        int visibility = lstOutputs.getVisibility();
+        if (visibility == View.VISIBLE){
+            lstOutputs.setVisibility(View.GONE);
+            lstGroups.setVisibility(View.VISIBLE);
+        }
+        else{
+            super.onBackPressed();
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
