@@ -152,9 +152,6 @@ public class OutputWidgetConfigureActivity extends Activity {
                     }
                     final Context context = OutputWidgetConfigureActivity.this;
 
-                    // When the button is clicked, store the string locally
-                    //String widgetText = mAppWidgetText.getText().toString();
-                    //saveTitlePref(context, mAppWidgetId, widgetText);
                     saveSettingsPref(context,mAppWidgetId,module,address, data);
 
                     // It is the responsibility of the configuration activity to update the app widget
@@ -184,8 +181,6 @@ public class OutputWidgetConfigureActivity extends Activity {
             finish();
             return;
         }
-
-        //mAppWidgetText.setText(loadTitlePref(OutputWidgetConfigureActivity.this, mAppWidgetId));
     }
 }
 

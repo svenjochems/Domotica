@@ -75,6 +75,7 @@ public class OutputWidget extends AppWidgetProvider {
 
             Log.d("Toggle", "module:" + module + ", address:" + address);
             con.toggleOutput(module, address);
+            // TODO: add support for moods
         }
 
         super.onReceive(context, intent);
