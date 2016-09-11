@@ -7,10 +7,13 @@ package be.jochems.sven.domotica;
 public class OutputListItem {
     private int imgResource;
     private String text;
+    private boolean isMood;
+    int outputIndex = -1;
 
-    public OutputListItem(int img, String text){
+    public OutputListItem(int img, String text, boolean isMood){
         this.imgResource = img;
         this.text = text;
+        this.isMood = isMood;
     }
 
     public int getImgResource() {
@@ -27,5 +30,21 @@ public class OutputListItem {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public boolean isMood() {
+        return isMood;
+    }
+
+    public void setMood(boolean mood) {
+        isMood = mood;
+    }
+
+    public int getOutputIndex() {
+        return outputIndex;
+    }
+
+    public void setOutputIndex(int outputIndex) {
+        this.outputIndex = outputIndex;
     }
 }

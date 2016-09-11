@@ -4,17 +4,15 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,37 +53,11 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 lstGroups.setVisibility(View.GONE);
 
-                // load outputstatus
-                byte[][] status = con.getStatus();
+                ArrayList<OutputListItem> outputList;
 
-                ArrayList<OutputListItem> outputList = new ArrayList<>();
-
-                // Load moods
-                if ((parent.getItemAtPosition(position)).equals(getString(R.string.lstMoods))) {
-
-                    String[] moods = application.getMoods();
-                    for (int i = 0; i < moods.length; i++) {
-                        OutputListItem item = new OutputListItem(R.drawable.mood_off, moods[i]);
-                        outputList.add(item);
-                    }
-
-                    // Load outputs
-                } else {
-
-                    int[][] outputIndex = application.getOutputIndex();
-                    String[][] outputs = application.getOutputs();
-                    int[][] outputIcon = application.getOutputIcon();
-
-
-                    for (int i = 0; i < outputIndex.length; i++) {
-                        for (int j = 0; j < outputIndex[i].length; j++) {
-                            if (outputIndex[i][j] == position) {
-                                OutputListItem outputListItem = constructListItem(outputs[i][j], outputIcon[i][j], status[i][j]);
-                                outputList.add(outputListItem);
-                            }
-                        }
-                    }
-                }
+                if ((parent.getItemAtPosition(position)).equals(getString(R.string.lstMoods)))
+                    outputList = populateMoods();
+                else outputList = populateOutputs(position);
 
                 adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, outputList);
                 lstOutputs.setAdapter(adpOutputs);
@@ -99,49 +71,58 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 OutputListItem data = (OutputListItem) parent.getItemAtPosition(position);
                 String name = data.getText();
+                boolean isMood = data.isMood();
 
-                // Moods
-                    // TODO: data is not called moods but names in the moods
-                    // TODO: Generalise loaded data
-                if (name.equals(getString(R.string.lstMoods))) {
-                    int address = -1;
-                    String[] moods = application.getMoods();
-
-                    for (int i = 0; i < moods.length; i++){
-                        if (moods[i].equals(name)){
-                            address = i;
-                            break;
-                        }
+                if (isMood)  toggleMood(name);
+                else {
+                    boolean test = toggleOutput(name);
+                    if (test) {
+                        ArrayList<OutputListItem> outputList = populateOutputs(data.getOutputIndex());
+                        adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, outputList);
+                        lstOutputs.setAdapter(adpOutputs);
                     }
-                    boolean test = con.toggleMood(address);
-                    //TODO: refresh status
-                    //TODO: change begin list layout (simple_list_layout?)
-
-                // Groups
-                } else {
-                    int module = -1;
-                    int address = -1;
-                    String[][] outputs = application.getOutputs();
-
-                    for (int i = 0; i < outputs.length; i++) {
-                        for (int j = 0; j < outputs[i].length; j++) {
-                            if (outputs[i][j].equals(name)) {
-                                module = i + 1;
-                                address = j;
-                                break;
-                            }
-                        }
-                    }
-                    boolean test = con.toggleOutput(module, address);
-                    // TODO: refresh status
                 }
             }
         });
     }
 
-    private OutputListItem constructListItem(String name, int type, byte status){
+    private ArrayList<OutputListItem> populateMoods(){
+        //TODO: get status from moods
+        ArrayList<OutputListItem> outputList = new ArrayList<>();
+
+        String[] moods = application.getMoods();
+        for (int i = 0; i < moods.length; i++) {
+            OutputListItem item = constructListItem(moods[i], 3, (byte)0, true);
+            outputList.add(item);
+        }
+        return outputList;
+    }
+
+    private ArrayList<OutputListItem> populateOutputs(int position){
+        ArrayList<OutputListItem> outputList = new ArrayList<>();
+
+        // load outputstatus
+        byte[][] status = con.getStatus();
+
+        int[][] outputIndex = application.getOutputIndex();
+        String[][] outputs = application.getOutputs();
+        int[][] outputIcon = application.getOutputIcon();
+
+        for (int i = 0; i < outputIndex.length; i++) {
+            for (int j = 0; j < outputIndex[i].length; j++) {
+                if (outputIndex[i][j] == position) {
+                    OutputListItem outputListItem = constructListItem(outputs[i][j], outputIcon[i][j], status[i][j], false);
+                    outputListItem.setOutputIndex(position);
+                    outputList.add(outputListItem);
+                }
+            }
+        }
+        return outputList;
+    }
+
+    private OutputListItem constructListItem(String name, int type, byte status, boolean isMood){
         int img = getImageResource(type, status);
-        OutputListItem item = new OutputListItem(img, name);
+        OutputListItem item = new OutputListItem(img, name, isMood);
         return item;
     }
 
@@ -157,6 +138,36 @@ public class MainActivity extends AppCompatActivity {
                 R.drawable.mood_on
         };
         return outputImage[type * 2 + status];
+    }
+
+    private boolean toggleMood(String name){
+        int address = -1;
+        String[] moods = application.getMoods();
+
+        for (int i = 0; i < moods.length; i++){
+            if (moods[i].equals(name)){
+                address = i;
+                break;
+            }
+        }
+        return con.toggleMood(address);
+    }
+
+    private boolean toggleOutput(String name){
+        int module = -1;
+        int address = -1;
+        String[][] outputs = application.getOutputs();
+
+        for (int i = 0; i < outputs.length; i++) {
+            for (int j = 0; j < outputs[i].length; j++) {
+                if (outputs[i][j].equals(name)) {
+                    module = i + 1;
+                    address = j;
+                    break;
+                }
+            }
+        }
+        return con.toggleOutput(module, address);
     }
 
     @Override
