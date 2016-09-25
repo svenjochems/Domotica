@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 /**
  * Implementation of App Widget functionality.
@@ -26,6 +27,7 @@ public class OutputWidget extends AppWidgetProvider {
         //
         Intent intent = new Intent(context, OutputWidget.class);
         intent.setAction(ACTION + module + "_" + address);
+        intent.putExtra("name", name);
         PendingIntent pendingIntent =  PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Construct the RemoteViews object
@@ -75,6 +77,16 @@ public class OutputWidget extends AppWidgetProvider {
 
             Log.d("Toggle", "module:" + module + ", address:" + address);
             con.toggleOutput(module, address);
+
+            byte[][] status = con.getStatus();
+            byte toggleStatus = status[module - 1][address];
+
+            String name = intent.getStringExtra("name");
+            String on = context.getString(R.string.widget_state_on);
+            String off = context.getString(R.string.widget_state_off);
+            String toastText = context.getString(R.string.widget_toggle_toast, name, toggleStatus == 1 ? on : off);
+
+            Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show();
             // TODO: add support for moods
         }
 
