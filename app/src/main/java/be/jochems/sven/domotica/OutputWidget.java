@@ -14,8 +14,8 @@ import android.widget.Toast;
  * App Widget Configuration implemented in {@link OutputWidgetConfigureActivity OutputWidgetConfigureActivity}
  */
 public class OutputWidget extends AppWidgetProvider {
-    public static String APPWIDGET_BUTTON = "android.appwidget.action.APPWIDGET_BUTTON";
-    private static final String ACTION = "toggleOutput_";
+    private static final String OUTPUT_ACTION = "toggleOutput_";
+    private static final String MOOD_ACTION = "toggleMood_";
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
@@ -24,9 +24,11 @@ public class OutputWidget extends AppWidgetProvider {
         int address = OutputWidgetConfigureActivity.loadAddrPref(context, appWidgetId);
         String name = OutputWidgetConfigureActivity.loadNamePref(context, appWidgetId);
 
-        //
         Intent intent = new Intent(context, OutputWidget.class);
-        intent.setAction(ACTION + module + "_" + address);
+
+        String action = module != -1 ? OUTPUT_ACTION + module + "_" + address : MOOD_ACTION + address;
+
+        intent.setAction(action);
         intent.putExtra("name", name);
         PendingIntent pendingIntent =  PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -68,7 +70,7 @@ public class OutputWidget extends AppWidgetProvider {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent.getAction().startsWith(ACTION)) {
+        if (intent.getAction().startsWith(OUTPUT_ACTION)) {
             Connection con = new Connection(context);
 
             String[] actions = intent.getAction().split("_");
@@ -87,7 +89,19 @@ public class OutputWidget extends AppWidgetProvider {
             String toastText = context.getString(R.string.widget_toggle_toast, name, toggleStatus == 1 ? on : off);
 
             Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show();
-            // TODO: add support for moods
+        } else if (intent.getAction().startsWith(MOOD_ACTION)){
+            Connection con = new Connection(context);
+
+            String[] actions = intent.getAction().split("_");
+            int address = Integer.parseInt(actions[1]);
+
+            Log.d("Toggle mood", "address:" + address);
+            con.toggleMood(address);
+
+            String name = intent.getStringExtra("name");
+            String toastText = context.getString(R.string.widget_mood_toast, name);
+
+            Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show();
         }
 
         super.onReceive(context, intent);

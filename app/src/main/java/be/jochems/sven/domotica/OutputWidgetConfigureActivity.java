@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -29,6 +30,8 @@ public class OutputWidgetConfigureActivity extends Activity {
     private ArrayAdapter<String> adpGroups;
     private ArrayAdapter<String> adpOutputs;
     private Domotica application;
+
+    private Boolean isMoodScreen = false;
 
     public OutputWidgetConfigureActivity() {
         super();
@@ -47,8 +50,8 @@ public class OutputWidgetConfigureActivity extends Activity {
     // If there is no preference saved, get the default from a resource
     static int loadModulePref(Context context, int appWidgetId) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, 0);
-        int module = prefs.getInt(PREF_PREFIX_KEY + "MOD_" + appWidgetId, -1);
-        if (module != -1) {
+        int module = prefs.getInt(PREF_PREFIX_KEY + "MOD_" + appWidgetId, Integer.MIN_VALUE);
+        if (module != Integer.MIN_VALUE) {
             return module;
         } else {
             return 1;
@@ -59,8 +62,8 @@ public class OutputWidgetConfigureActivity extends Activity {
     // If there is no preference saved, get the default from a resource
     static int loadAddrPref(Context context, int appWidgetId) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, 0);
-        int address = prefs.getInt(PREF_PREFIX_KEY + "ADD_" + appWidgetId, -1);
-        if (address != -1) {
+        int address = prefs.getInt(PREF_PREFIX_KEY + "ADD_" + appWidgetId, Integer.MIN_VALUE);
+        if (address != Integer.MIN_VALUE) {
             return address;
         } else {
             return 1;
@@ -106,8 +109,9 @@ public class OutputWidgetConfigureActivity extends Activity {
         final int[][] outputIndex = application.getOutputIndex();
         final int[][] outputIcon = application.getOutputIcon();
 
-
-        adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, groups);
+        String[] lstData = Arrays.copyOf(groups, groups.length + 1);
+        lstData[lstData.length - 1] = getString(R.string.lstMoods);
+        adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lstData);
         lstWidgetGroups.setAdapter(adpGroups);
 
         lstWidgetGroups.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -118,11 +122,19 @@ public class OutputWidgetConfigureActivity extends Activity {
 
                 outputList.add(getString(R.string.lstBack));
 
-                for (int i = 0; i < outputIndex.length; i++) {
-                    for (int j = 0; j < outputIndex[i].length; j++) {
-                        if (outputIndex[i][j] == position)
-                            outputList.add(outputs[i][j]);
+                if ((parent.getItemAtPosition(position)).equals(getString(R.string.lstMoods))){
+                    for (String mood : moods) {
+                        outputList.add(mood);
                     }
+                    isMoodScreen = true;
+                } else {
+                    for (int i = 0; i < outputIndex.length; i++) {
+                        for (int j = 0; j < outputIndex[i].length; j++) {
+                            if (outputIndex[i][j] == position)
+                                outputList.add(outputs[i][j]);
+                        }
+                    }
+                    isMoodScreen = false;
                 }
 
                 adpOutputs = new ArrayAdapter<>(OutputWidgetConfigureActivity.this, android.R.layout.simple_list_item_1, outputList);
@@ -142,11 +154,21 @@ public class OutputWidgetConfigureActivity extends Activity {
                 } else {
                     int module = -1;
                     int address = -1;
-                    for (int i = 0; i < outputs.length; i++) {
-                        for (int j = 0; j < outputs[i].length; j++) {
-                            if (outputs[i][j].equals(data)) {
-                                module = i + 1;
-                                address = j;
+
+                    if (isMoodScreen) {
+                        // Keep module -1 for mood
+                        for (int i = 0; i < moods.length; i++) {
+                            if (moods[i].equals(data)) {
+                                address = i;
+                            }
+                        }
+                    } else {
+                        for (int i = 0; i < outputs.length; i++) {
+                            for (int j = 0; j < outputs[i].length; j++) {
+                                if (outputs[i][j].equals(data)) {
+                                    module = i + 1;
+                                    address = j;
+                                }
                             }
                         }
                     }
