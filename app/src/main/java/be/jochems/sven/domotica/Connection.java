@@ -241,7 +241,7 @@ public class Connection {
         //AF02FF'mod'0000080108FFFFFFFFFFFFAF'mod''addr'02FFFF64FFFF
         byte[] sendData = new byte[]{(byte)175, (byte)2, (byte)255, (byte)module, (byte)0, (byte)0, (byte)8, (byte)1,
                 (byte)8, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)175,
-                (byte)53, (byte)address, (byte)2, (byte)255, (byte)255, (byte)100, (byte)255, (byte)255};
+                (byte)83, (byte)address, (byte)2, (byte)255, (byte)255, (byte)100, (byte)255, (byte)255};
         byte[] receive;
 
         try {
