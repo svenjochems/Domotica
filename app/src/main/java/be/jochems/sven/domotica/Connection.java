@@ -269,7 +269,7 @@ public class Connection {
 
                 //TODO: show spinner while waiting
                 // Dobiss Ip module refuses to many connections in too little timeframe
-                Thread.sleep(20);
+                Thread.sleep(50);
                 byte[] rec = new Network().execute(sendData).get();
                 Log.i("Get status", "Module " + module);
 
