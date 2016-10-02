@@ -1,4 +1,4 @@
-package be.jochems.sven.domotica;
+package be.jochems.sven.domotica.view;
 
 /**
  * Created by sven on 10/09/16.

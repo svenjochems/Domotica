@@ -3,20 +3,12 @@ package be.jochems.sven.domotica;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.util.Arrays;
+import be.jochems.sven.domotica.connection.Connection;
 
 /**
  * Created by sven on 20/03/16.

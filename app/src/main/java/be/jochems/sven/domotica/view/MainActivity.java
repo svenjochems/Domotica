@@ -1,4 +1,4 @@
-package be.jochems.sven.domotica;
+package be.jochems.sven.domotica.view;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,6 +13,10 @@ import android.widget.ListView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import be.jochems.sven.domotica.connection.Connection;
+import be.jochems.sven.domotica.Domotica;
+import be.jochems.sven.domotica.R;
 
 public class MainActivity extends AppCompatActivity {
 

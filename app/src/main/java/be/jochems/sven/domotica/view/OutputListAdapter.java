@@ -1,4 +1,4 @@
-package be.jochems.sven.domotica;
+package be.jochems.sven.domotica.view;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -10,6 +10,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+
+import be.jochems.sven.domotica.R;
 
 /**
  * Created by sven on 10/09/16.

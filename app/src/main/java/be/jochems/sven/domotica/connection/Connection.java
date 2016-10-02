@@ -1,4 +1,4 @@
-package be.jochems.sven.domotica;
+package be.jochems.sven.domotica.connection;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -14,6 +14,8 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
+
+import be.jochems.sven.domotica.R;
 
 /**
  * Created by sven on 29/03/16.

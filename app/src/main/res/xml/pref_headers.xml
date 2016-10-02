@@ -2,12 +2,12 @@
 
     <!-- These settings headers are only used on tablets. -->
     <header
-        android:fragment="be.jochems.sven.domotica.SettingsActivity$ConnectionPreferenceFragment"
+        android:fragment="be.jochems.sven.domotica.view.SettingsActivity$ConnectionPreferenceFragment"
         android:icon="@drawable/ic_device_hub_black_24dp"
         android:title="@string/pref_header_connection" />
 
     <header
-        android:fragment="be.jochems.sven.domotica.SettingsActivity$GeneralPreferenceFragment"
+        android:fragment="be.jochems.sven.domotica.view.SettingsActivity$GeneralPreferenceFragment"
         android:icon="@drawable/ic_info_black_24dp"
         android:title="@string/pref_header_general" />
 

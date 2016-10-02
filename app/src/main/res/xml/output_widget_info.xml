@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:configure="be.jochems.sven.domotica.OutputWidgetConfigureActivity"
+    android:configure="be.jochems.sven.domotica.widget.OutputWidgetConfigureActivity"
     android:initialKeyguardLayout="@layout/output_widget"
     android:initialLayout="@layout/output_widget"
     android:minHeight="40dp"

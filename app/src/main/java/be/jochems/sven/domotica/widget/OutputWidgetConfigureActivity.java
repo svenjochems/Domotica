@@ -1,4 +1,4 @@
-package be.jochems.sven.domotica;
+package be.jochems.sven.domotica.widget;
 
 import android.app.Activity;
 import android.appwidget.AppWidgetManager;
@@ -9,19 +9,21 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ListView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import be.jochems.sven.domotica.Domotica;
+import be.jochems.sven.domotica.R;
+
 /**
  * The configuration screen for the {@link OutputWidget OutputWidget} AppWidget.
  */
 public class OutputWidgetConfigureActivity extends Activity {
 
-    private static final String PREFS_NAME = "be.jochems.sven.domotica.OutputWidget";
+    private static final String PREFS_NAME = "be.jochems.sven.domotica.widget.OutputWidget";
     private static final String PREF_PREFIX_KEY = "appwidget_";
     int mAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
 

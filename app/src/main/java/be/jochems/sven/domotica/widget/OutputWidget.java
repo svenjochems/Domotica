@@ -1,4 +1,4 @@
-package be.jochems.sven.domotica;
+package be.jochems.sven.domotica.widget;
 
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -8,6 +8,9 @@ import android.content.Intent;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
+
+import be.jochems.sven.domotica.connection.Connection;
+import be.jochems.sven.domotica.R;
 
 /**
  * Implementation of App Widget functionality.
