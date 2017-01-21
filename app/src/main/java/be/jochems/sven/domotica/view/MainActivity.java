@@ -13,10 +13,15 @@ import android.widget.ListView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import be.jochems.sven.domotica.connection.ActionHelper;
 import be.jochems.sven.domotica.connection.Connection;
 import be.jochems.sven.domotica.Domotica;
 import be.jochems.sven.domotica.R;
+import be.jochems.sven.domotica.data.ActionInterface;
+import be.jochems.sven.domotica.data.Group;
+import be.jochems.sven.domotica.data.Mood;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -25,11 +30,10 @@ public class MainActivity extends AppCompatActivity {
     private ListView    lstOutputs;
 
     // Fields
-    private ArrayAdapter<String> adpGroups;
+    private ArrayAdapter<Group> adpGroups;
     private OutputListAdapter adpOutputs;
 
     private Domotica application;
-    private Connection con;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,13 +46,10 @@ public class MainActivity extends AppCompatActivity {
         lstOutputs = (ListView) findViewById(R.id.lstOutputs);
 
         application = (Domotica)getApplicationContext();
-        con = new Connection(getApplicationContext());
 
-        String[] groups = application.getGroups();
-        String[] lstData = Arrays.copyOf(groups, groups.length + 1);
-        lstData[lstData.length - 1] = getString(R.string.lstMoods);
+        final List<Group> groups = application.getMgroups();
 
-        adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lstData);
+        adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, groups);
         lstGroups.setAdapter(adpGroups);
 
         // load list with moods or outputs
@@ -56,15 +57,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 lstGroups.setVisibility(View.GONE);
-
-                ArrayList<OutputListItem> outputList;
-
-                if ((parent.getItemAtPosition(position)).equals(getString(R.string.lstMoods)))
-                    outputList = populateMoods();
-                else outputList = populateOutputs(position);
-
-                adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, outputList);
+                ActionHelper.updateStatus(groups, getApplicationContext());
+                ArrayList<ActionInterface> items = new ArrayList<>();
+                items.addAll(groups.get(position).getItems());
+                adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, items);
                 lstOutputs.setAdapter(adpOutputs);
+                adpOutputs.notifyDataSetChanged();      // TODO: test notify instead of rebuild array
                 lstOutputs.setVisibility(View.VISIBLE);
             }
         });
@@ -73,105 +71,20 @@ public class MainActivity extends AppCompatActivity {
         lstOutputs.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                OutputListItem data = (OutputListItem) parent.getItemAtPosition(position);
-                String name = data.getText();
-                boolean isMood = data.isMood();
+                ActionInterface item = (ActionInterface) parent.getItemAtPosition(position);
 
-                if (isMood)  toggleMood(name);
-                else {
-                    boolean test = toggleOutput(name);
-                    if (test) {
-                        ArrayList<OutputListItem> outputList = populateOutputs(data.getOutputIndex());
-                        adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, outputList);
-                        lstOutputs.setAdapter(adpOutputs);
-                    }
+                boolean toggleTest = ActionHelper.toggleAction(item, getApplicationContext());
+                boolean statusTest = ActionHelper.updateStatus(groups, getApplicationContext());
+
+                // update list with new statusses
+                if (toggleTest && statusTest) {
+                    ArrayList<ActionInterface> items = new ArrayList<>();
+                    items.addAll(item.getGroup().getItems());
+                    adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, items);
+                    lstOutputs.setAdapter(adpOutputs);
                 }
             }
         });
-    }
-
-    private ArrayList<OutputListItem> populateMoods(){
-        //TODO: get status from moods
-        ArrayList<OutputListItem> outputList = new ArrayList<>();
-
-        String[] moods = application.getMoods();
-        for (int i = 0; i < moods.length; i++) {
-            OutputListItem item = constructListItem(moods[i], 3, (byte)0, true);
-            outputList.add(item);
-        }
-        return outputList;
-    }
-
-    private ArrayList<OutputListItem> populateOutputs(int position){
-        ArrayList<OutputListItem> outputList = new ArrayList<>();
-
-        // load outputstatus
-        byte[][] status = con.getStatus();
-
-        int[][] outputIndex = application.getOutputIndex();
-        String[][] outputs = application.getOutputs();
-        int[][] outputIcon = application.getOutputIcon();
-
-        for (int i = 0; i < outputIndex.length; i++) {
-            for (int j = 0; j < outputIndex[i].length; j++) {
-                if (outputIndex[i][j] == position) {
-                    OutputListItem outputListItem = constructListItem(outputs[i][j], outputIcon[i][j], status[i][j], false);
-                    outputListItem.setOutputIndex(position);
-                    outputList.add(outputListItem);
-                }
-            }
-        }
-        return outputList;
-    }
-
-    private OutputListItem constructListItem(String name, int type, byte status, boolean isMood){
-        int img = getImageResource(type, status);
-        OutputListItem item = new OutputListItem(img, name, isMood);
-        return item;
-    }
-
-    private int getImageResource(int type, byte status){
-        int[] outputImage = new int[]{
-                R.drawable.light_out,
-                R.drawable.light_on,
-                R.drawable.plug_out,
-                R.drawable.plug_on,
-                R.drawable.fan_out,
-                R.drawable.fan_on,
-                R.drawable.mood_off,
-                R.drawable.mood_on
-        };
-        return outputImage[type * 2 + status];
-    }
-
-    private boolean toggleMood(String name){
-        int address = -1;
-        String[] moods = application.getMoods();
-
-        for (int i = 0; i < moods.length; i++){
-            if (moods[i].equals(name)){
-                address = i;
-                break;
-            }
-        }
-        return con.toggleMood(address);
-    }
-
-    private boolean toggleOutput(String name){
-        int module = -1;
-        int address = -1;
-        String[][] outputs = application.getOutputs();
-
-        for (int i = 0; i < outputs.length; i++) {
-            for (int j = 0; j < outputs[i].length; j++) {
-                if (outputs[i][j].equals(name)) {
-                    module = i + 1;
-                    address = j;
-                    break;
-                }
-            }
-        }
-        return con.toggleOutput(module, address);
     }
 
     @Override

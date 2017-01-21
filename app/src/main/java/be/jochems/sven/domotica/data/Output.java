@@ -22,26 +22,26 @@ public class Output implements ActionInterface{
 
     @Override
     public Group getGroup() {
-        return group;
+        return this.group;
     }
 
     @Override
     public byte getAddress() {
-        return 0;
+        return this.address;
     }
 
     public Module getModule() {
-        return module;
+        return this.module;
     }
 
     @Override
     public String getName() {
-        return name;
+        return this.name;
     }
 
     @Override
     public int getIcon() {
-        return icon;
+        return this.icon;
     }
 
     @Override
@@ -52,5 +52,10 @@ public class Output implements ActionInterface{
     @Override
     public void setStatus(boolean status) {
         this.status = status;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
     }
 }

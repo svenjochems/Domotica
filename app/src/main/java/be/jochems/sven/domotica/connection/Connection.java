@@ -2,17 +2,8 @@ package be.jochems.sven.domotica.connection;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.util.Arrays;
 
 import be.jochems.sven.domotica.R;
@@ -23,6 +14,8 @@ import be.jochems.sven.domotica.R;
  * Create connection with Dobiss domotics Lan interface
  */
 public class Connection {
+
+    private ConnectionHelper tcp;
 
     private final static int NUMBER_OF_MODULES = 2;
 
@@ -37,12 +30,10 @@ public class Connection {
     private String ip;
     private int port;
 
-    private Socket socket;
-
     public Connection(Context c){
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
-
+        SharedPreferences prefs = c.getSharedPreferences("connection", Context.MODE_PRIVATE);
+        // TODO: network discovery
         String prefIp = prefs.getString(c.getString(R.string.pref_key_ip), "");
         String prefPort = prefs.getString(c.getString(R.string.pref_key_port),"");
 
@@ -51,66 +42,63 @@ public class Connection {
         }
         ip = "192.168.0.177";
         port = 10001;
+
+        tcp = new ConnectionHelper("192.168.0.177", 10001);
     }
 
     // Import all data in memory at once, avoid multiple tcp connections
     public boolean importData(){
-        boolean gr = loadGroups();
-        boolean ou = loadOutputs(NUMBER_OF_MODULES);
-        boolean mo = loadMoods();
-        boolean co = closeConnection();
+        boolean gr = loadGroups(true);
+        boolean ou = loadOutputs(NUMBER_OF_MODULES, true);
+        boolean mo = loadMoods(true);
+        boolean co = tcp.closeConnection();
 
         return gr && ou && mo && co;
     }
 
     public String[] getGroups() {
         if(groups == null) {
-            loadGroups();
-            closeConnection();
+            loadGroups(false);
         }
         return groups;
     }
 
     public String[][] getOutputs() {
         if (outputs == null){
-            loadOutputs(NUMBER_OF_MODULES);
-            closeConnection();
+            loadOutputs(NUMBER_OF_MODULES, false);
         }
         return outputs;
     }
 
     public String[] getMoods() {
         if (moods == null){
-            loadMoods();
-            closeConnection();
+            loadMoods(false);
         }
         return moods;
     }
 
     public int[][] getOutputIndex() {
         if (outputIndex == null){
-            loadOutputs(NUMBER_OF_MODULES);
-            closeConnection();
+            loadOutputs(NUMBER_OF_MODULES, false);
         }
         return outputIndex;
     }
 
     public int[][] getOutputIcon() {
         if (outputIcon == null){
-            loadOutputs(NUMBER_OF_MODULES);
-            closeConnection();
+            loadOutputs(NUMBER_OF_MODULES, false);
         }
         return outputIcon;
     }
 
-    private boolean loadGroups() {
+    private boolean loadGroups(boolean keepConnection) {
         byte[] sendData = new byte[]{(byte)175, (byte)16 , (byte)8 , (byte)2 , (byte)24 , (byte)0 , (byte)32 , (byte)0
                 , (byte)32 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)175};
         byte[] receive;
         String[] groupArray;
 
         try {
-            receive = new Network().execute(sendData).get();
+            receive = tcp.execute(keepConnection, sendData);
 
             String groupsl = new String(receive);
             groupsl = groupsl.substring(0,groupsl.length() - 16);
@@ -131,7 +119,7 @@ public class Connection {
         return true;
     }
 
-    private boolean loadOutputs(int numberOfModules){
+    private boolean loadOutputs(int numberOfModules, boolean keepConnection){
 
         outputs         = new String[numberOfModules][];
         outputIndex     = new int[numberOfModules][];
@@ -145,7 +133,7 @@ public class Connection {
                 byte[] sendData = new byte[]{(byte)175, (byte)16 , (byte)8 , (byte)i , (byte)1 , (byte)0 , (byte)32 , (byte)12
                         , (byte)32 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)175};
 
-                receive[i-1] = new Network().execute(sendData).get();
+                receive[i-1] = tcp.execute(keepConnection, sendData);
                 Thread.sleep(200);
             }
 
@@ -178,14 +166,14 @@ public class Connection {
         return true;
     }
 
-    private boolean loadMoods() {
+    private boolean loadMoods(boolean keepConnection) {
         byte[] sendData = new byte[]{(byte) 175, (byte) 16, (byte) 8, (byte) 2, (byte) 12, (byte) 0, (byte) 32, (byte) 0
                 , (byte) 32, (byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 175};
         byte[] receive;
         String[] moodsArray = null;
 
         try {
-            receive = new Network().execute(sendData).get();
+            receive = tcp.execute(keepConnection, sendData);
 
             String moodsl = new String(receive);
             moodsl = moodsl.substring(0, moodsl.length() - 16);
@@ -206,16 +194,7 @@ public class Connection {
         return true;
     }
 
-    public boolean closeConnection(){
-        try{
-            if (socket.isConnected())
-                socket.close();
-        } catch (Exception e){
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
+
 
     public boolean toggleOutput(int module, int address){
         //AF02FF'mod'0000080108FFFFFFFFFFFFAF'mod''addr'02FFFF64FFFF
@@ -225,14 +204,12 @@ public class Connection {
         byte[] receive;
 
         try {
-            receive = new Network().execute(sendData).get();
+            receive = tcp.execute(false, sendData);
             Log.i("Toggle output", "Module " + module + ", address " + address);
 
         } catch (Exception e){
             e.printStackTrace();
             return false;
-        } finally {
-            closeConnection();
         }
         return true;
     }
@@ -247,14 +224,12 @@ public class Connection {
         byte[] receive;
 
         try {
-            receive = new Network().execute(sendData).get();
+            receive = tcp.execute(false, sendData);
             Log.i("Toggle mood", "Module " + module + ", address " + address);
 
         } catch (Exception e){
             e.printStackTrace();
             return false;
-        } finally {
-            closeConnection();
         }
         return true;
     }
@@ -272,7 +247,7 @@ public class Connection {
                 //TODO: show spinner while waiting
                 // Dobiss Ip module refuses to many connections in too little timeframe
                 Thread.sleep(50);
-                byte[] rec = new Network().execute(sendData).get();
+                byte[] rec = tcp.execute(false, sendData);
                 Log.i("Get status", "Module " + module);
 
                 // trim unused addresses
@@ -288,73 +263,7 @@ public class Connection {
         } catch (Exception e){
             e.printStackTrace();
             return null;
-        } finally {
-            closeConnection();
         }
         return receive;
-    }
-
-    private class Network extends AsyncTask<byte[], String, byte[]> {
-
-        @Override
-        protected byte[] doInBackground(byte[]... params) {
-
-            try {
-                InetAddress address = InetAddress.getByName(ip);
-
-                if (socket == null) {
-                    socket = new Socket(address, port);
-                } else{
-                    if (socket.isClosed()){
-                        socket = new Socket(address, port);
-                    }
-                }
-
-                OutputStream out = socket.getOutputStream();
-                DataOutputStream dos = new DataOutputStream(out);
-
-                dos.write(params[0]);
-
-                InputStream in = socket.getInputStream();
-                DataInputStream dis = new DataInputStream(in);
-
-                //dis.read();
-                int maxLines = 26;
-                byte[] data = new byte[maxLines*16];
-
-                byte[] end = new byte[16];
-                Arrays.fill(end, (byte) 255);
-
-                int count = 0;
-                while (count < maxLines){
-                    byte[] temp = new byte[16];
-                    dis.read(temp,0,16);
-
-                    if(Arrays.equals(temp,end) && count >= 2){
-                        //Log.d("Break","Break");
-                        break;
-                    }
-
-                    for(int j = 0; j < temp.length; j++) {
-                        data[count*16 + j] = temp[j];
-                    }
-                    count++;
-                }
-
-                //Log.d("data", Arrays.toString(data));
-
-                byte[] result = Arrays.copyOfRange(data, 32, count * 16);
-                //Log.d("Recieved Data", Arrays.toString(result));
-
-                return result;
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-
-            return null;
-        }
     }
 }

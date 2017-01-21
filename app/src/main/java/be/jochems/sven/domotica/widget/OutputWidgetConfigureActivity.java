@@ -17,6 +17,9 @@ import java.util.List;
 
 import be.jochems.sven.domotica.Domotica;
 import be.jochems.sven.domotica.R;
+import be.jochems.sven.domotica.data.ActionInterface;
+import be.jochems.sven.domotica.data.Group;
+import be.jochems.sven.domotica.data.Output;
 
 /**
  * The configuration screen for the {@link OutputWidget OutputWidget} AppWidget.
@@ -25,15 +28,15 @@ public class OutputWidgetConfigureActivity extends Activity {
 
     private static final String PREFS_NAME = "be.jochems.sven.domotica.widget.OutputWidget";
     private static final String PREF_PREFIX_KEY = "appwidget_";
+    private final byte BACKADDRESS = (byte)255;
+
     int mAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
 
     private ListView lstWidgetGroups;
     private ListView lstWidgetOutputs;
-    private ArrayAdapter<String> adpGroups;
-    private ArrayAdapter<String> adpOutputs;
+    private ArrayAdapter<Group> adpGroups;
+    private ArrayAdapter<ActionInterface> adpOutputs;
     private Domotica application;
-
-    private Boolean isMoodScreen = false;
 
     public OutputWidgetConfigureActivity() {
         super();
@@ -105,78 +108,40 @@ public class OutputWidgetConfigureActivity extends Activity {
 
         application = (Domotica)getApplicationContext();
 
-        final String[] groups = application.getGroups();
-        final String[][] outputs = application.getOutputs();
-        final String[] moods = application.getMoods();
-        final int[][] outputIndex = application.getOutputIndex();
-        final int[][] outputIcon = application.getOutputIcon();
+        final List<Group> mgroups = application.getMgroups();
 
-        String[] lstData = Arrays.copyOf(groups, groups.length + 1);
-        lstData[lstData.length - 1] = getString(R.string.lstMoods);
-        adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lstData);
+        adpGroups = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, mgroups);
         lstWidgetGroups.setAdapter(adpGroups);
 
         lstWidgetGroups.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 lstWidgetGroups.setVisibility(View.GONE);
-                List<String> outputList = new ArrayList<String>();
 
-                outputList.add(getString(R.string.lstBack));
+                ArrayList<ActionInterface> items = new ArrayList<>();
+                items.addAll(mgroups.get(position).getItems());
+                items.add(new Output(null, BACKADDRESS, null, getString(R.string.lstBack), 0));
 
-                if ((parent.getItemAtPosition(position)).equals(getString(R.string.lstMoods))){
-                    for (String mood : moods) {
-                        outputList.add(mood);
-                    }
-                    isMoodScreen = true;
-                } else {
-                    for (int i = 0; i < outputIndex.length; i++) {
-                        for (int j = 0; j < outputIndex[i].length; j++) {
-                            if (outputIndex[i][j] == position)
-                                outputList.add(outputs[i][j]);
-                        }
-                    }
-                    isMoodScreen = false;
-                }
-
-                adpOutputs = new ArrayAdapter<>(OutputWidgetConfigureActivity.this, android.R.layout.simple_list_item_1, outputList);
+                adpOutputs = new ArrayAdapter<>(OutputWidgetConfigureActivity.this, android.R.layout.simple_list_item_1, items);
                 lstWidgetOutputs.setAdapter(adpOutputs);
                 lstWidgetOutputs.setVisibility(View.VISIBLE);
-
             }
         });
 
         lstWidgetOutputs.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String data = (String) parent.getItemAtPosition(position);
-                if (data.equals(getString(R.string.lstBack))) {
+                ActionInterface item = (ActionInterface) parent.getItemAtPosition(position);
+                if (item.getAddress() == BACKADDRESS) {
                     lstWidgetOutputs.setVisibility(View.GONE);
                     lstWidgetGroups.setVisibility(View.VISIBLE);
                 } else {
-                    int module = -1;
-                    int address = -1;
+                    int module = item instanceof Output ? ((Output) item).getModule().getAddress() : -1;
+                    int address = item.getAddress();
 
-                    if (isMoodScreen) {
-                        // Keep module -1 for mood
-                        for (int i = 0; i < moods.length; i++) {
-                            if (moods[i].equals(data)) {
-                                address = i;
-                            }
-                        }
-                    } else {
-                        for (int i = 0; i < outputs.length; i++) {
-                            for (int j = 0; j < outputs[i].length; j++) {
-                                if (outputs[i][j].equals(data)) {
-                                    module = i + 1;
-                                    address = j;
-                                }
-                            }
-                        }
-                    }
                     final Context context = OutputWidgetConfigureActivity.this;
 
-                    saveSettingsPref(context,mAppWidgetId,module,address, data);
+                    saveSettingsPref(context,mAppWidgetId,module,address, item.getName());
 
                     // It is the responsibility of the configuration activity to update the app widget
                     AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

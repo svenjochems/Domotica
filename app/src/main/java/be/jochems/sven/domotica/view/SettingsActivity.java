@@ -86,7 +86,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
     private void importData(){
         application = (Domotica)getApplicationContext();
-        application.importData();
+        application.retreiveData(true);
     }
 
     /**

@@ -5,9 +5,13 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import be.jochems.sven.domotica.R;
 import be.jochems.sven.domotica.data.Group;
@@ -20,89 +24,33 @@ import be.jochems.sven.domotica.data.Output;
  */
 
 public class Importer {
+    private static final int MOODINDEX = 999;
 
-    private final static int NUMBER_OF_MODULES = 2;
+    private SharedPreferences prefs;
 
-    private List<Group> groups;
+    private List<Group>  groups;
     private List<Module> modules;
 
-    private TcpConnection tcp;
+    public Importer(Context context, boolean noLocalData){
+        prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE);
 
-    public Importer(Context c){
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
-
-        String prefIp = prefs.getString(c.getString(R.string.pref_key_ip), "");
-        String prefPort = prefs.getString(c.getString(R.string.pref_key_port),"");
-
-        if (prefIp.equals("") || prefPort.equals("")){
-            //TODO: prefs not loaded, start settingsactivity, but not from this class
-        }
-
-        tcp = new TcpConnection("192.168.0.177", 10001);
-        groups = new ArrayList<>();
+        groups  = new ArrayList<>();
         modules = new ArrayList<>();
-        createModules(NUMBER_OF_MODULES);
-        createMoodGroup(c);
+
+        RawDate rawDate = loadData(context, noLocalData);
+        convertDate(rawDate, context);
     }
 
-    // Import all data in memory at once, avoid multiple tcp connections
-    public boolean importData(){
-        boolean gr = loadGroups();
-        boolean ou = loadOutputs();
-        boolean mo = loadMoods();
-        boolean co = tcp.closeConnection();
-
-        return gr && ou && mo && co;
+    public Importer(Context context) {
+        this(context, false);   // try data from shared prefs
     }
 
-    public List<Group> getGroups(){
-        return this.groups;
+    public List<Group> getGroups() {
+        return groups;
     }
 
-    public List<Module> getModules(){
-        return this.modules;
-    }
-
-    private boolean loadGroups() {
-        byte[] sendData = new byte[]{(byte)175, (byte)16 , (byte)8 , (byte)2 , (byte)24 , (byte)0 , (byte)32 , (byte)0
-                , (byte)32 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)175};
-        byte[] receive;
-
-        String[] groupArray;
-        try {
-            receive = tcp.execute(sendData).get();
-
-            String groupsl = new String(receive);
-            groupsl = groupsl.substring(0,groupsl.length() - 16);
-            groupArray = new String[groupsl.length()/32];
-
-            for(int i = 0; i < groupArray.length; i++){
-                Group g = new Group(groupsl.substring(i*32, (i+1)*32).trim());
-                g.setIndex(i);
-                groups.add(g);
-            }
-
-            Log.d("Groups","Imported: " + Arrays.toString(groupArray));
-
-        }catch (Exception e){
-            e.printStackTrace();
-            return false;
-        }
-
-        return true;
-    }
-
-    private void createModules(int numberOfModules){
-        for (int i = 1; i <= numberOfModules; i++) {
-            modules.add(new Module((byte)i));
-        }
-    }
-
-    private void createMoodGroup(Context c){
-        Group mood = new Group(c.getString(R.string.lstMoods));
-        mood.setIndex(999);
-        groups.add(mood);
+    public List<Module> getModules() {
+        return modules;
     }
 
     private Group getGroupWithIndex(int index){
@@ -114,151 +62,266 @@ public class Importer {
         return null;
     }
 
-    private boolean loadOutputs(){
 
+    private void convertDate(RawDate rawDate, Context c) {
+        createGroups(rawDate);
+        createMoodGroup(c);
+        createModules(rawDate);
+        createMoods(rawDate);
+    }
+
+    private void createGroups(RawDate rawDate) {
+        String[] groups = rawDate.getGroups();
+        for (int i = 0; i < groups.length; i++) {
+            Group g = new Group(groups[i]);
+            g.setIndex(i);
+            this.groups.add(g);
+        }
+    }
+
+    private void createModules(RawDate rawDate) {
+        for (int i = 0; i < rawDate.getOutputs().length; i++) {
+            Module m = new Module((byte)(i+1));     // modules start with address 1
+            m.setOutputs(createOutputs(rawDate, m));
+            this.modules.add(m);
+        }
+    }
+
+    private List<Output> createOutputs(RawDate rawDate, Module module) {
+        List<Output> outputs = new ArrayList<>();
+
+        int index = module.getAddress() - 1;    // modules start with address 1
+
+        String[] outs = rawDate.getOutputs()[index];
+        int[][] outputIndex = rawDate.getOutputIndex();
+        int[][] outputIcon = rawDate.getOutputIcon();
+
+        for (int i = 0; i < outs.length; i++) {
+            Group group = getGroupWithIndex(outputIndex[index][i]);
+            Output o = new Output(group, (byte)i, module, outs[i], outputIcon[index][i]);
+
+            outputs.add(o);
+            group.addItem(o);
+        }
+        return outputs;
+    }
+
+    private void createMoodGroup(Context c) {
+        Group mood = new Group(c.getString(R.string.lstMoods));
+        mood.setIndex(MOODINDEX);
+        this.groups.add(mood);
+    }
+
+    private void createMoods(RawDate rawDate) {
+        String[] moods = rawDate.getMoods();
+        for (int i = 0; i < moods.length; i++) {
+            Group moodGroup = getGroupWithIndex(MOODINDEX);
+            Mood mood = new Mood(moodGroup, (byte)i, moods[i]);
+            moodGroup.addItem(mood);
+        }
+    }
+
+
+
+    private RawDate loadData(Context c, boolean noLocalData){
+        RawDate rawDate;
+
+        if(noLocalData || prefs.getString("groups",null) == null ||
+                prefs.getString("outputs",null) == null ||
+                prefs.getString("moods",null) == null ||
+                prefs.getString("index",null) == null ||
+                prefs.getString("icon",null) == null){
+
+            rawDate = importData(c);
+            saveData(rawDate);
+
+        } else {
+            String[]   groups      = loadStringArray("groups");
+            String[][] outputs     = load2dStringArray("outputs");
+            String[]   moods       = loadStringArray("moods");
+            int[][]    outputIndex = load2dIntArray("index");
+            int[][]    outputIcon  = load2dIntArray("icon");
+            Log.i("Load Data", "Data available, loading");
+
+            rawDate = new RawDate(groups, outputs, moods, outputIndex, outputIcon);
+        }
+        return rawDate;
+    }
+
+    private RawDate importData(Context c){
+        Log.i("Load Data", "No data available, importing");
+        Connection con = new Connection(c);
+        con.importData();
+
+        String[]   groups      = con.getGroups();
+        String[][] outputs     = con.getOutputs();
+        String[]   moods       = con.getMoods();
+        int[][]    outputIndex = con.getOutputIndex();
+        int[][]    outputIcon  = con.getOutputIcon();
+
+        RawDate rawDate = new RawDate(groups, outputs, moods, outputIndex, outputIcon);
+
+        return rawDate;
+    }
+
+
+
+    // Save loaded data to shared preferences
+    private boolean saveData(RawDate rawDate){
+        boolean a = saveStringArray(rawDate.getGroups(), "groups");
+        boolean b = save2dStringArray(rawDate.getOutputs(), "outputs");
+        boolean c = saveStringArray(rawDate.getMoods(), "moods");
+        boolean d = save2dIntArray(rawDate.getOutputIndex(), "index");
+        boolean e = save2dIntArray(rawDate.getOutputIcon(),"icon");
+
+        Log.d("Save", "Saving imported data");
+
+        return a && b && c && d && e;
+    }
+
+    private boolean saveStringArray(String[] array, String arrayName) {
+        SharedPreferences.Editor editor = prefs.edit();
         try {
-            //af 10 08 01 01 00 20 0c 20 ff ff ff ff ff ff af
-            for (Module m : modules){
-                byte[] sendData = new byte[]{(byte)175, (byte)16 , (byte)8 , m.getAddress() , (byte)1 , (byte)0 , (byte)32 , (byte)12
-                        , (byte)32 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)255 , (byte)175};
+            JSONArray json = new JSONArray(array);
+            editor.putString(arrayName, json.toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return editor.commit();
+    }
 
-                byte[] bytes = tcp.execute(sendData).get();
+    private String[] loadStringArray(String arrayName) {
+        String jsonString = prefs.getString(arrayName, null);
+        try {
+            JSONArray jsonArray = new JSONArray(jsonString);
+            String[] array = new String[jsonArray.length()];
+            for (int i = 0; i < array.length; i++)
+                array[i] = jsonArray.getString(i);
+            return array;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return new String[]{};
+    }
 
-                int length = bytes.length / 32;
-                for (int i = 0; i < length; i++){
-                    byte[] temp = Arrays.copyOfRange(bytes,i*32,(i+1)*32);
-                    byte icon = temp[temp.length-2];
-                    byte index = temp[temp.length-1];
-                    String name = new String(temp).substring(0,30).trim();
+    private boolean save2dStringArray(String[][] array, String arrayName) {
+        SharedPreferences.Editor editor = prefs.edit();
+        try {
+            JSONArray json = new JSONArray(array);
+            editor.putString(arrayName, json.toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return editor.commit();
+    }
 
-                    Group group = getGroupWithIndex(index);
-
-                    Output o = new Output(group, (byte)i, m, name, icon);
-                    group.addItem(o);
-                    m.addOutput(o);
+    private String[][] load2dStringArray(String arrayName) {
+        String jsonString = prefs.getString(arrayName, null);
+        try {
+            JSONArray jsonArray = new JSONArray(jsonString);
+            String[][] array = new String[jsonArray.length()][];
+            for (int i = 0; i < array.length; i++){
+                JSONArray sub = new JSONArray(jsonArray.getString(i));
+                array[i] = new String[sub.length()];
+                for (int j = 0; j < array[i].length; j++) {
+                    array[i][j] = sub.getString(j);
                 }
-
-                Thread.sleep(200);
             }
 
-        } catch (Exception e){
+            return array;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return new String[][]{};
+    }
+
+    private boolean save2dIntArray(int[][] array, String arrayName) {
+        SharedPreferences.Editor editor = prefs.edit();
+        try {
+            JSONArray json = new JSONArray(array);
+            editor.putString(arrayName, json.toString());
+        } catch (JSONException e) {
             e.printStackTrace();
             return false;
         }
-        return true;
+        return editor.commit();
     }
 
-    private boolean loadMoods() {
-        byte[] sendData = new byte[]{(byte) 175, (byte) 16, (byte) 8, (byte) 2, (byte) 12, (byte) 0, (byte) 32, (byte) 0
-                , (byte) 32, (byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 175};
-        byte[] receive;
-        String[] moodsArray = null;
-
+    private int[][] load2dIntArray(String arrayName) {
+        String jsonString = prefs.getString(arrayName, null);
         try {
-            receive = tcp.execute(sendData).get();
-
-            String moodsl = new String(receive);
-            moodsl = moodsl.substring(0, moodsl.length() - 16);
-            moodsArray = new String[moodsl.length() / 32];
-
-            for (int i = 0; i < moodsArray.length; i++) {
-                String name = moodsl.substring(i * 32, (i + 1) * 32).trim();
-                Group moodGroup = getGroupWithIndex(999);
-                Mood mood = new Mood(moodGroup, (byte)i, name);
-                moodGroup.addItem(mood);
-            }
-
-            Log.d("Moods","Imported: " + Arrays.toString(moodsArray));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
-    public boolean toggleOutput(Output output){
-        byte module = output.getModule().getAddress();
-        byte address = output.getAddress();
-
-        //AF02FF'mod'0000080108FFFFFFFFFFFFAF'mod''addr'02FFFF64FFFF
-        byte[] sendData = new byte[]{(byte)175, (byte)2, (byte)255, module, (byte)0, (byte)0, (byte)8, (byte)1,
-                (byte)8, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)175,
-                module, address, (byte)2, (byte)255, (byte)255, (byte)100, (byte)255, (byte)255};
-        byte[] receive;
-
-        try {
-            receive = tcp.execute(sendData).get();
-            Log.i("Toggle output", "Module " + module + ", address " + address);
-
-        } catch (Exception e){
-            e.printStackTrace();
-            return false;
-        } finally {
-            tcp.closeConnection();
-        }
-        return true;
-    }
-
-    public boolean toggleMood(Mood mood){
-        byte module = (byte)255;
-        byte address = mood.getAddress();
-
-        //AF02FF'mod'0000080108FFFFFFFFFFFFAF'mod''addr'02FFFF64FFFF
-        byte[] sendData = new byte[]{(byte)175, (byte)2, (byte)255, module, (byte)0, (byte)0, (byte)8, (byte)1,
-                (byte)8, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)175,
-                (byte)83, address, (byte)2, (byte)255, (byte)255, (byte)100, (byte)255, (byte)255};
-        byte[] receive;
-
-        try {
-            receive = tcp.execute(sendData).get();
-            Log.i("Toggle mood", "Module " + module + ", address " + address);
-
-        } catch (Exception e){
-            e.printStackTrace();
-            return false;
-        } finally {
-            tcp.closeConnection();
-        }
-        return true;
-    }
-
-    public void setStatus(){
-
-        try {
-
-            for (Module m : modules) {
-                byte[] sendData = new byte[]{(byte)175, (byte)1, (byte)8, m.getAddress(), (byte)0, (byte)0, (byte)0, (byte)1,
-                        (byte)0, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)175};
-
-                //TODO: show spinner while waiting
-                // Dobiss Ip module refuses to many connections in too little timeframe
-                Thread.sleep(50);
-                byte[] rec = tcp.execute(sendData).get();
-                Log.i("Get status", "Module " + m.getAddress());
-
-                // trim unused addresses
-                int lastIndex = -1;
-                for (int j = 0; j < rec.length; j++){
-                    if (rec[j] == (byte)255 ){
-                        lastIndex = j;
-                        break;
-                    }
-                }
-                byte[] bytes = Arrays.copyOf(rec, lastIndex);
-
-                for (int i = 0; i < bytes.length; i++) {
-                    Output o = m.getOutputWithAddress(i);
-                    if (o == null) {
-
-                    }
-                    o.setStatus(bytes[i] == (byte)0 ? false : true);
+            JSONArray jsonArray = new JSONArray(jsonString);
+            int[][] array = new int[jsonArray.length()][];
+            for (int i = 0; i < array.length; i++){
+                JSONArray sub = new JSONArray(jsonArray.getString(i));
+                array[i] = new int[sub.length()];
+                for (int j = 0; j < array[i].length; j++) {
+                    array[i][j] = Integer.parseInt(sub.getString(j));
                 }
             }
-        } catch (Exception e){
+
+            return array;
+        } catch (JSONException e) {
             e.printStackTrace();
-        } finally {
-            tcp.closeConnection();
+        }
+        return new int[][]{};
+    }
+
+    class RawDate {
+        private String[]    groups;         // name with index
+        private String[][]  outputs;        // name with index on module index
+        private String[]    moods;          // name with index
+        private int[][]     outputIndex;    // index from group
+        private int[][]     outputIcon;     // icon index
+
+        public RawDate(String[] groups, String[][] outputs, String[] moods, int[][] outputIndex, int[][] outputIcon) {
+            this.groups         = groups;
+            this.outputs        = outputs;
+            this.moods          = moods;
+            this.outputIndex    = outputIndex;
+            this.outputIcon     = outputIcon;
+        }
+
+        public String[] getGroups() {
+            return groups;
+        }
+
+        public void setGroups(String[] groups) {
+            this.groups = groups;
+        }
+
+        public String[][] getOutputs() {
+            return outputs;
+        }
+
+        public void setOutputs(String[][] outputs) {
+            this.outputs = outputs;
+        }
+
+        public String[] getMoods() {
+            return moods;
+        }
+
+        public void setMoods(String[] moods) {
+            this.moods = moods;
+        }
+
+        public int[][] getOutputIndex() {
+            return outputIndex;
+        }
+
+        public void setOutputIndex(int[][] outputIndex) {
+            this.outputIndex = outputIndex;
+        }
+
+        public int[][] getOutputIcon() {
+            return outputIcon;
+        }
+
+        public void setOutputIcon(int[][] outputIcon) {
+            this.outputIcon = outputIcon;
         }
     }
 }
