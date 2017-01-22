@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         lstOutputs = (ListView) findViewById(R.id.lstOutputs);
 
         application = (Domotica)getApplicationContext();
+        application.init(null); // TODO: init in load activity (or with spinner overlay)
 
         final List<Group> groups = application.getMgroups();
 
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 lstGroups.setVisibility(View.GONE);
-                ActionHelper.updateStatus(groups, getApplicationContext());
+                ActionHelper.updateStatus(groups);
                 ArrayList<ActionInterface> items = new ArrayList<>();
                 items.addAll(groups.get(position).getItems());
                 adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, items);
@@ -73,8 +74,8 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 ActionInterface item = (ActionInterface) parent.getItemAtPosition(position);
 
-                boolean toggleTest = ActionHelper.toggleAction(item, getApplicationContext());
-                boolean statusTest = ActionHelper.updateStatus(groups, getApplicationContext());
+                boolean toggleTest = ActionHelper.toggleAction(item);
+                boolean statusTest = ActionHelper.updateStatus(groups);
 
                 // update list with new statusses
                 if (toggleTest && statusTest) {

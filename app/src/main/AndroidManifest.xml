@@ -46,6 +46,10 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".view.MainActivity" />
         </activity>
+        <activity
+            android:name=".view.AppLoadActivity"
+            android:label="@string/title_activity_app_load"
+            android:theme="@style/AppTheme" />
     </application>
 
 </manifest>

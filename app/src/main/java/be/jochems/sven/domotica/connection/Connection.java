@@ -1,12 +1,11 @@
 package be.jochems.sven.domotica.connection;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.util.Log;
 
+import java.net.InetAddress;
 import java.util.Arrays;
 
-import be.jochems.sven.domotica.R;
+import be.jochems.sven.domotica.view.OnTaskComplete;
 
 /**
  * Created by sven on 29/03/16.
@@ -15,9 +14,11 @@ import be.jochems.sven.domotica.R;
  */
 public class Connection {
 
-    private ConnectionHelper tcp;
+    private static ConnectionHelper tcp;
 
     private final static int NUMBER_OF_MODULES = 2;
+    private static InetAddress address;
+    private static final int port = 10001;
 
     private String[]    groups;
     private String[][]  outputs;
@@ -26,24 +27,19 @@ public class Connection {
     private int[][]     outputIndex;
     private int[][]     outputIcon;
 
+    public Connection() {
+    }
 
-    private String ip;
-    private int port;
-
-    public Connection(Context c){
-
-        SharedPreferences prefs = c.getSharedPreferences("connection", Context.MODE_PRIVATE);
-        // TODO: network discovery
-        String prefIp = prefs.getString(c.getString(R.string.pref_key_ip), "");
-        String prefPort = prefs.getString(c.getString(R.string.pref_key_port),"");
-
-        if (prefIp.equals("") || prefPort.equals("")){
-            //TODO: prefs not loaded, start settingsactivity, but not from this class
+    public void openConnection(OnTaskComplete listener) throws Exception {
+        if (address == null) {
+            try {
+                address = new UdpDiscovery(listener).execute().get();
+            } catch (Exception e) {
+                throw e;
+            }
         }
-        ip = "192.168.0.177";
-        port = 10001;
 
-        tcp = new ConnectionHelper("192.168.0.177", 10001);
+        tcp = new ConnectionHelper(address, port);
     }
 
     // Import all data in memory at once, avoid multiple tcp connections

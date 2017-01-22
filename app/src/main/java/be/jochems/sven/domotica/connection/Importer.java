@@ -31,17 +31,17 @@ public class Importer {
     private List<Group>  groups;
     private List<Module> modules;
 
-    public Importer(Context context, boolean noLocalData){
+    public Importer(Context context, boolean noLocalData) {
         prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE);
 
         groups  = new ArrayList<>();
         modules = new ArrayList<>();
 
-        RawDate rawDate = loadData(context, noLocalData);
+        RawDate rawDate = loadData(noLocalData);
         convertDate(rawDate, context);
     }
 
-    public Importer(Context context) {
+    public Importer(Context context) throws Exception {
         this(context, false);   // try data from shared prefs
     }
 
@@ -123,7 +123,7 @@ public class Importer {
 
 
 
-    private RawDate loadData(Context c, boolean noLocalData){
+    private RawDate loadData(boolean noLocalData) {
         RawDate rawDate;
 
         if(noLocalData || prefs.getString("groups",null) == null ||
@@ -132,7 +132,7 @@ public class Importer {
                 prefs.getString("index",null) == null ||
                 prefs.getString("icon",null) == null){
 
-            rawDate = importData(c);
+            rawDate = importData();
             saveData(rawDate);
 
         } else {
@@ -148,9 +148,9 @@ public class Importer {
         return rawDate;
     }
 
-    private RawDate importData(Context c){
+    private RawDate importData() {
         Log.i("Load Data", "No data available, importing");
-        Connection con = new Connection(c);
+        Connection con = new Connection();
         con.importData();
 
         String[]   groups      = con.getGroups();

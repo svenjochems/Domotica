@@ -14,8 +14,8 @@ import be.jochems.sven.domotica.data.Output;
 
 public class ActionHelper {
 
-    public static boolean updateStatus(List<Group> groups, Context context) {
-        Connection con = new Connection(context);
+    public static boolean updateStatus(List<Group> groups) {
+        Connection con = new Connection();
         byte[][] status = con.getStatus();
         for (Group group : groups) {
             for (ActionInterface item : group.getItems()) {
@@ -31,8 +31,8 @@ public class ActionHelper {
         return true;
     }
 
-    public static boolean toggleAction(ActionInterface item, Context context) {
-        Connection con = new Connection(context);
+    public static boolean toggleAction(ActionInterface item) {
+        Connection con = new Connection();
 
         if (item instanceof Output)
             return con.toggleOutput(((Output) item).getModule().getAddress(), item.getAddress());

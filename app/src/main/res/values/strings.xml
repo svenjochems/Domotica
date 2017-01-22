@@ -86,4 +86,8 @@
     <string name="widget_state_on">on</string>
     <string name="widget_state_off">off</string>
 
+    <string name="error_connection">There is no active Dobiss module found on the network, please check your network settings</string>
+    <string name="title_activity_app_load">AppLoadActivity</string>
+    <string name="connection_load">Connecting to installation</string>
+
 </resources>

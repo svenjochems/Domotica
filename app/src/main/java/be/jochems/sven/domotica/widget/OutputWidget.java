@@ -73,9 +73,20 @@ public class OutputWidget extends AppWidgetProvider {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent.getAction().startsWith(OUTPUT_ACTION)) {
-            Connection con = new Connection(context);
+        Connection con = new Connection();
+        try {
+            con.openConnection(null);
+            doAction(context, intent, con);
+        } catch (Exception e) {
+            String toastText = context.getString(R.string.error_connection);
+            Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show();
+        }
 
+        super.onReceive(context, intent);
+    }
+
+    private void doAction(Context context, Intent intent, Connection con) {
+        if (intent.getAction().startsWith(OUTPUT_ACTION)) {
             String[] actions = intent.getAction().split("_");
             int module = Integer.parseInt(actions[1]);
             int address = Integer.parseInt(actions[2]);
@@ -93,8 +104,6 @@ public class OutputWidget extends AppWidgetProvider {
 
             Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show();
         } else if (intent.getAction().startsWith(MOOD_ACTION)){
-            Connection con = new Connection(context);
-
             String[] actions = intent.getAction().split("_");
             int address = Integer.parseInt(actions[1]);
 
@@ -106,8 +115,6 @@ public class OutputWidget extends AppWidgetProvider {
 
             Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show();
         }
-
-        super.onReceive(context, intent);
     }
 }
 

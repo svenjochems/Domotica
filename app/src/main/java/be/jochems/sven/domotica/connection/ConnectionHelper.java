@@ -1,6 +1,7 @@
 package be.jochems.sven.domotica.connection;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -17,17 +18,17 @@ import java.util.Arrays;
 
 public class ConnectionHelper {
     private Socket socket;
-    private String ip;
+    private InetAddress address;
     private int port;
 
-    public ConnectionHelper(String ip, int port) {
-        this.ip = ip;
+    public ConnectionHelper(InetAddress address, int port) {
+        this.address = address;
         this.port = port;
     }
 
     public boolean closeConnection() {
         try {
-            if (socket.isConnected())
+            if (socket != null && socket.isConnected())
                 socket.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -53,7 +54,6 @@ public class ConnectionHelper {
         protected byte[] doInBackground(byte[]... params) {
 
             try {
-                InetAddress address = InetAddress.getByName(ip);
                 if (socket == null) {
                     socket = new Socket(address, port);
                 } else {
@@ -97,10 +97,8 @@ public class ConnectionHelper {
 
                 return result;
 
-            } catch (IOException e) {
-                e.printStackTrace();
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e("ConnectionHelper", "Error executing action");
             }
 
             return null;
