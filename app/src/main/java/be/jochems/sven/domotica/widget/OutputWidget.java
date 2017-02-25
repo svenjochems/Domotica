@@ -75,7 +75,7 @@ public class OutputWidget extends AppWidgetProvider {
     public void onReceive(Context context, Intent intent) {
         Connection con = new Connection();
         try {
-            con.openConnection(null);
+            con.openConnection();
             doAction(context, intent, con);
         } catch (Exception e) {
             String toastText = context.getString(R.string.error_connection);

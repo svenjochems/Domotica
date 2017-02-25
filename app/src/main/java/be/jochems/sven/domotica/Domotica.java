@@ -11,7 +11,6 @@ import be.jochems.sven.domotica.connection.Connection;
 import be.jochems.sven.domotica.connection.Importer;
 import be.jochems.sven.domotica.data.Group;
 import be.jochems.sven.domotica.data.Module;
-import be.jochems.sven.domotica.view.OnTaskComplete;
 
 /**
  * Created by sven on 20/03/16.
@@ -36,10 +35,10 @@ public class Domotica extends Application {
         return this;
     }
 
-    public boolean init(OnTaskComplete listener) {
+    public boolean init() {
         Connection connection = new Connection();
         try {
-            connection.openConnection(listener);
+            connection.openConnection();
             importData();
             return true;
         } catch (Exception e) {

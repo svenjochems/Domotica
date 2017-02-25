@@ -5,8 +5,6 @@ import android.util.Log;
 import java.net.InetAddress;
 import java.util.Arrays;
 
-import be.jochems.sven.domotica.view.OnTaskComplete;
-
 /**
  * Created by sven on 29/03/16.
  *
@@ -30,10 +28,12 @@ public class Connection {
     public Connection() {
     }
 
-    public void openConnection(OnTaskComplete listener) throws Exception {
+    public void openConnection() throws Exception {
         if (address == null) {
             try {
-                address = new UdpDiscovery(listener).execute().get();
+                address = new UdpDiscovery().execute().get();
+                if (address == null)
+                    throw new Exception("Error in network discovery");
             } catch (Exception e) {
                 throw e;
             }

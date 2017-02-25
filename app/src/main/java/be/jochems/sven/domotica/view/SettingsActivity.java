@@ -35,6 +35,7 @@ import be.jochems.sven.domotica.R;
  * API Guide</a> for more information on developing a Settings UI.
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
+    //TODO: remove connectionsettings
 
     private boolean inFragment;
     private Domotica application;

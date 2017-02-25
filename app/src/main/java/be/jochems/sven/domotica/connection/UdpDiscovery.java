@@ -10,8 +10,6 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 
-import be.jochems.sven.domotica.view.OnTaskComplete;
-
 /**
  * Created by sven on 22/01/17.
  */
@@ -19,11 +17,6 @@ import be.jochems.sven.domotica.view.OnTaskComplete;
 public class UdpDiscovery extends AsyncTask<Void, Void, InetAddress> {
     private final String TAG = "UdpDiscovery";
     private final int port = 30718;
-    private OnTaskComplete listener;
-
-    public UdpDiscovery(OnTaskComplete listener) {
-        this.listener = listener;
-    }
 
     @Override
     protected InetAddress doInBackground(Void... params) {
@@ -62,11 +55,11 @@ public class UdpDiscovery extends AsyncTask<Void, Void, InetAddress> {
             socket.receive(receivePacket);
 
             //We have a response
-            Log.d(TAG, "Connection found on address " + receivePacket.getAddress());
+            Log.i(TAG, "Connection found on address " + receivePacket.getAddress());
             return receivePacket.getAddress();
 
         } catch (Exception e) {
-            Log.d(TAG, "No connected installation found");
+            Log.i(TAG, "No connected installation found", e);
         } finally {
             if (socket != null && !socket.isClosed())
             socket.close();
@@ -77,7 +70,5 @@ public class UdpDiscovery extends AsyncTask<Void, Void, InetAddress> {
     @Override
     protected void onPostExecute(InetAddress address) {
         super.onPostExecute(address);
-        if (listener != null)
-            listener.onTaskCompleted(address != null);
     }
 }
