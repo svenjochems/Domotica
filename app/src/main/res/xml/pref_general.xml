@@ -1,7 +1,13 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <Preference
-        android:title="@string/pref_title_import"
-        android:key="@string/pref_key_import" />
+    <PreferenceCategory
+        android:title="@string/pref_header_general"
+        android:key="@string/pref_header_general">
+
+        <Preference
+            android:title="@string/pref_title_import"
+            android:key="@string/pref_key_import" />
+
+    </PreferenceCategory>
 
 </PreferenceScreen>

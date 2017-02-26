@@ -4,6 +4,8 @@ package be.jochems.sven.domotica.view;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,6 +18,7 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 
 import java.util.List;
 
@@ -35,7 +38,6 @@ import be.jochems.sven.domotica.R;
  * API Guide</a> for more information on developing a Settings UI.
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
-    //TODO: remove connectionsettings
 
     private boolean inFragment;
     private Domotica application;
@@ -70,6 +72,13 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 preference.setSummary(stringValue);
             }
             return true;
+        }
+    };
+
+    private static View.OnLongClickListener preferenceLongClickListener = new View.OnLongClickListener() {
+        @Override
+        public boolean onLongClick(View v) {
+            return false;
         }
     };
 
@@ -176,7 +185,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     protected boolean isValidFragment(String fragmentName) {
         return PreferenceFragment.class.getName().equals(fragmentName)
                 || GeneralPreferenceFragment.class.getName().equals(fragmentName)
-                || ConnectionPreferenceFragment.class.getName().equals(fragmentName);
+                || AboutPreferenceFragment.class.getName().equals(fragmentName);
     }
 
     /**
@@ -209,16 +218,18 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class ConnectionPreferenceFragment extends PreferenceFragment {
+    public static class AboutPreferenceFragment extends PreferenceFragment {
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_connection);
+            addPreferencesFromResource(R.xml.pref_about);
             setHasOptionsMenu(true);
             ((SettingsActivity) getActivity()).inFragment = true;
 
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_key_ip)));
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_key_port)));
+            Preference sourcePref = findPreference(getString(R.string.pref_about_source));
+            Preference authorPref = findPreference(getString(R.string.pref_about_author));
+            Preference versionPref = findPreference(getString(R.string.pref_about_version));
+            //TODO: copy on long click
         }
 
         @Override

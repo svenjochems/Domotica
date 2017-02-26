@@ -166,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    //TODO: add about popup
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -178,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             startActivity(new Intent(this,SettingsActivity.class));
             return true;
-        } else if (id == R.id.action_exit){
+        } else if (id == R.id.action_exit) {
             finish();
         }
 
