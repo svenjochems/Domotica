@@ -108,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
                 items.addAll(groups.get(position).getItems());
                 adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, items);
                 lstOutputs.setAdapter(adpOutputs);
-                adpOutputs.notifyDataSetChanged();      // TODO: test notify instead of rebuild array
                 lstOutputs.setVisibility(View.VISIBLE);
             }
         });
@@ -126,8 +125,8 @@ public class MainActivity extends AppCompatActivity {
                 if (toggleTest && statusTest) {
                     ArrayList<ActionInterface> items = new ArrayList<>();
                     items.addAll(item.getGroup().getItems());
-                    adpOutputs = new OutputListAdapter(MainActivity.this, R.layout.list_outputs, items);
-                    lstOutputs.setAdapter(adpOutputs);
+                    adpOutputs.updateData(items);
+                    adpOutputs.notifyDataSetChanged();
                 }
             }
         });

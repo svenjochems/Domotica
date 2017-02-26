@@ -240,7 +240,6 @@ public class Connection {
                 byte[] sendData = new byte[]{(byte)175, (byte)1, (byte)8, (byte)module, (byte)0, (byte)0, (byte)0, (byte)1,
                         (byte)0, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)175};
 
-                //TODO: show spinner while waiting
                 // Dobiss Ip module refuses to many connections in too little timeframe
                 Thread.sleep(50);
                 byte[] rec = tcp.execute(false, sendData);

@@ -26,6 +26,20 @@ public class OutputListAdapter extends ArrayAdapter<ActionInterface> {
         this.context = context;
     }
 
+    public void updateData(ArrayList<ActionInterface> data) {
+        // if count of items is not changed: only update status
+        // else reload all items
+
+        if (data.size() == super.getCount()) {
+            for (int i = 0; i < data.size(); i++) {
+                super.getItem(i).setStatus(data.get(i).getStatus());
+            }
+        } else {
+            super.clear();
+            super.addAll(data);
+        }
+    }
+
     @NonNull
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
