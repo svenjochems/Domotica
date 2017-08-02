@@ -17,6 +17,9 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.github.javiersantos.appupdater.AppUpdater;
+import com.github.javiersantos.appupdater.enums.UpdateFrom;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,6 +140,15 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        checkUpdate();
+    }
+
+    private void checkUpdate() {
+        new AppUpdater(this)
+                .setUpdateFrom(UpdateFrom.GITHUB)
+                .setGitHubUserAndRepo("svenjochems", "Domotica")
+                .start();
     }
 
     private void onLoadFinished() {

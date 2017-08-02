@@ -5,6 +5,7 @@
     android:versionName="@string/app_version">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".Domotica"
@@ -45,6 +46,14 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".view.MainActivity" />
+        </activity>
+        <activity android:name=".Actions">
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED"/>
+                <action android:name="android.intent.action.RUN"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="my/tag"/>
+            </intent-filter>
         </activity>
     </application>
 
