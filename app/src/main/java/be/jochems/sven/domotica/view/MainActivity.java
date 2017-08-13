@@ -1,11 +1,14 @@
 package be.jochems.sven.domotica.view;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,6 +19,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.javiersantos.appupdater.AppUpdater;
 import com.github.javiersantos.appupdater.enums.UpdateFrom;
@@ -28,6 +32,8 @@ import be.jochems.sven.domotica.Domotica;
 import be.jochems.sven.domotica.R;
 import be.jochems.sven.domotica.data.ActionInterface;
 import be.jochems.sven.domotica.data.Group;
+import be.jochems.sven.domotica.data.Mood;
+import be.jochems.sven.domotica.data.Output;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -131,6 +137,38 @@ public class MainActivity extends AppCompatActivity {
                     adpOutputs.updateData(items);
                     adpOutputs.notifyDataSetChanged();
                 }
+            }
+        });
+
+        lstOutputs.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                ActionInterface item = (ActionInterface) parent.getItemAtPosition(position);
+
+                int module;
+                if (item instanceof Output) {
+                    Output o = (Output) item;
+                    module = o.getModule().getAddress();
+
+                } else if (item instanceof Mood) {
+                    //todo: mood object standard on module -1?
+                    module = -1;
+
+                } else {
+                    return false;
+                }
+
+                String pref = "" + module + "_" + item.getAddress() + "_" + item.getName();
+
+                SharedPreferences prefs = getApplicationContext().getSharedPreferences("nfc", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = prefs.edit();
+
+                editor.putString("default", pref);
+                editor.apply();
+                //todo: translation
+                Toast.makeText(getApplicationContext(), "NFC default set: " + item.getName(), Toast.LENGTH_LONG).show();
+
+                return true;
             }
         });
 
