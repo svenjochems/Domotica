@@ -42,7 +42,11 @@ public class Mood implements ActionInterface {
 
     @Override
     public void setStatus(boolean status) {
+    }
 
+    @Override
+    public ActionIdentifier getIdentifier() {
+        return new ActionIdentifier(name, address, (byte) -1);
     }
 
     @Override

@@ -4,7 +4,7 @@ package be.jochems.sven.domotica.data;
  * Created by sven on 2/10/16.
  */
 
-public class Output implements ActionInterface{
+public class Output implements ActionInterface {
     private Group group;
     private byte address;
     private Module module;
@@ -52,6 +52,11 @@ public class Output implements ActionInterface{
     @Override
     public void setStatus(boolean status) {
         this.status = status;
+    }
+
+    @Override
+    public ActionIdentifier getIdentifier() {
+        return new ActionIdentifier(name, address, module.getAddress());
     }
 
     @Override

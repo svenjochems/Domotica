@@ -1,5 +1,6 @@
 package be.jochems.sven.domotica.data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

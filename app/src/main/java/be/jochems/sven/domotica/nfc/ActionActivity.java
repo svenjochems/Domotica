@@ -2,24 +2,55 @@ package be.jochems.sven.domotica.nfc;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.apache.commons.lang3.SerializationUtils;
+
+import java.io.Serializable;
+
 import be.jochems.sven.domotica.connection.Connection;
+import be.jochems.sven.domotica.data.ActionIdentifier;
 
 public class ActionActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        try {
-            doDefaultAction();
-        } catch (IllegalArgumentException e) {
-            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+        Intent intent = getIntent();
+        if (intent != null && NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction())) {
+            Parcelable[] rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+            if (rawMessages != null) {
+                NdefMessage[] messages = new NdefMessage[rawMessages.length];
+                for (int i = 0; i < rawMessages.length; i++) {
+                    messages[i] = (NdefMessage) rawMessages[i];
+                }
+
+            } else {
+                System.out.println("No message");
+            }
+        } else {
+            try {
+                doDefaultAction();
+            } catch (IllegalArgumentException e) {
+                Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+            }
         }
+
         finish();
+    }
+
+    private void doAction(NdefMessage message) {
+        NdefRecord[] records = message.getRecords();
+        NdefRecord record = records[0];
+        ActionIdentifier action = SerializationUtils.deserialize(record.getPayload());
     }
 
     private void doDefaultAction() throws IllegalArgumentException {

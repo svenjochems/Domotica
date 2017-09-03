@@ -1,5 +1,6 @@
 package be.jochems.sven.domotica.view;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,7 +9,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -144,30 +144,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 ActionInterface item = (ActionInterface) parent.getItemAtPosition(position);
-
-                int module;
-                if (item instanceof Output) {
-                    Output o = (Output) item;
-                    module = o.getModule().getAddress();
-
-                } else if (item instanceof Mood) {
-                    //todo: mood object standard on module -1?
-                    module = -1;
-
-                } else {
-                    return false;
-                }
-
-                String pref = "" + module + "_" + item.getAddress() + "_" + item.getName();
-
-                SharedPreferences prefs = getApplicationContext().getSharedPreferences("nfc", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = prefs.edit();
-
-                editor.putString("default", pref);
-                editor.apply();
-                //todo: translation
-                Toast.makeText(getApplicationContext(), "NFC default set: " + item.getName(), Toast.LENGTH_LONG).show();
-
+                showLongPressPopup(item);
                 return true;
             }
         });
@@ -188,6 +165,63 @@ public class MainActivity extends AppCompatActivity {
                 .setGitHubUserAndRepo("svenjochems", "Domotica")
                 .start();
     }
+
+    private boolean showLongPressPopup(final ActionInterface item) {
+        final Dialog dialog = new Dialog(MainActivity.this);
+        dialog.setContentView(R.layout.popup_action);
+        dialog.show();
+
+        ListView actions = (ListView) dialog.findViewById(R.id.listPopup);
+        actions.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                switch (position) {
+                    case 0:
+                        setNfcDefault(item);
+                        System.out.println("Set as default");
+                        break;
+                    case 1:
+                        writeNfcTag(item);
+                        System.out.println("Write tag");
+                        break;
+                }
+                dialog.dismiss();
+            }
+        });
+
+        return true;
+    }
+
+    private void setNfcDefault(ActionInterface item) {
+        int module;
+        if (item instanceof Output) {
+            Output o = (Output) item;
+            module = o.getModule().getAddress();
+
+        } else if (item instanceof Mood) {
+            //todo: mood object standard on module -1?
+            module = -1;
+        } else {
+            return;
+        }
+
+        String pref = "" + module + "_" + item.getAddress() + "_" + item.getName();
+
+        SharedPreferences prefs = getApplicationContext().getSharedPreferences("nfc", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        editor.putString("default", pref);
+        editor.apply();
+        //todo: translation
+        Toast.makeText(getApplicationContext(), "NFC default set: " + item.getName(), Toast.LENGTH_LONG).show();
+    }
+
+    private void writeNfcTag(ActionInterface item) {
+        Intent nfcIntent = new Intent(MainActivity.this, NfcWriteActivity.class);
+        nfcIntent.putExtra("item", item.getIdentifier());
+        startActivity(nfcIntent);
+    }
+
 
     private void onLoadFinished() {
         layoutLoad.setVisibility(View.GONE);

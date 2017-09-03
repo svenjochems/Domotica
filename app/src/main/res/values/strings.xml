@@ -36,4 +36,11 @@
     <string name="error_connection">There is no active Dobiss module found on the network, please check your network settings</string>
     <string name="connection_load">Connecting to installation</string>
 
+
+    <!-- NFC -->
+    <array name="popup_actions">
+        <item>Set as default action</item>
+        <item>Write to NFC tag</item>
+    </array>
+
 </resources>
