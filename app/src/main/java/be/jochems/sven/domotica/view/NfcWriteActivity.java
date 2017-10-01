@@ -13,8 +13,10 @@ import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
-import org.apache.commons.lang3.SerializationUtils;
+
+import be.jochems.sven.domotica.R;
 import be.jochems.sven.domotica.data.ActionIdentifier;
+import be.jochems.sven.domotica.nfc.NfcException;
 import be.jochems.sven.domotica.nfc.NfcUtils;
 
 public class NfcWriteActivity extends AppCompatActivity {
@@ -34,7 +36,7 @@ public class NfcWriteActivity extends AppCompatActivity {
             Bundle extras = intent.getExtras();
             item = (ActionIdentifier) extras.get("item");
         } catch (Exception e) {
-            Toast.makeText(this, "No or invalid data passed, returning", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getApplicationContext().getString(R.string.intent_nfc_invalidData), Toast.LENGTH_SHORT).show();
             finish();
         }
 
@@ -44,10 +46,10 @@ public class NfcWriteActivity extends AppCompatActivity {
                         .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
 
         dialog = new AlertDialog.Builder(NfcWriteActivity.this)
-                .setTitle("Touch tag to write")
+                .setTitle(getApplicationContext().getString(R.string.nfc_dialog_title))
                 .setCancelable(true)
-                .setMessage("touch tag")
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                .setMessage(getApplicationContext().getString(R.string.nfc_dialog_message))
+                .setNegativeButton(getApplicationContext().getString(R.string.nfc_dialog_cancel), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         disableTagWriteMode();
@@ -72,7 +74,6 @@ public class NfcWriteActivity extends AppCompatActivity {
         dialog.dismiss();
     }
 
-
     private void enableTagWriteMode() {
         mWriteMode = true;
         IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
@@ -87,15 +88,20 @@ public class NfcWriteActivity extends AppCompatActivity {
 
     @Override
     protected void onNewIntent(Intent intent) {
-        byte[] itemData = SerializationUtils.serialize(item);
+        byte[] itemData = item.toString().getBytes();
 
         // Tag writing mode
-        if (mWriteMode && NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
+        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
             Tag detectedTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             NdefRecord record = NdefRecord.createMime("action/domotica", itemData);
             NdefMessage message = new NdefMessage(new NdefRecord[] { record });
-            if (NfcUtils.writeTag(message, detectedTag)) {
-                Toast.makeText(this, "Wrote to NFC tag: " + item.getName(), Toast.LENGTH_LONG).show();
+
+            try {
+                NfcUtils.writeTag(message, detectedTag);
+                String toastText = getApplicationContext().getString(R.string.nfc_write_success, item.getName());
+                Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_LONG).show();
+            } catch (NfcException e) {
+                Toast.makeText(getApplicationContext(), e.getMessage(getApplicationContext()), Toast.LENGTH_LONG).show();
             }
             finish();
         }

@@ -9,13 +9,9 @@ import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.util.Log;
 import android.widget.Toast;
 
-import org.apache.commons.lang3.SerializationUtils;
-
-import java.io.Serializable;
-
+import be.jochems.sven.domotica.R;
 import be.jochems.sven.domotica.connection.Connection;
 import be.jochems.sven.domotica.data.ActionIdentifier;
 
@@ -25,65 +21,77 @@ public class ActionActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Intent intent = getIntent();
+
+        // triggered from nfc tag
         if (intent != null && NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction())) {
             Parcelable[] rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
             if (rawMessages != null) {
-                NdefMessage[] messages = new NdefMessage[rawMessages.length];
                 for (int i = 0; i < rawMessages.length; i++) {
-                    messages[i] = (NdefMessage) rawMessages[i];
+                    NdefMessage message = (NdefMessage) rawMessages[i];
+                    try {
+                        doAction(message);
+                    } catch (Exception e) {
+                        Toast.makeText(getApplicationContext(), R.string.action_nfc_error, Toast.LENGTH_LONG);
+                    }
                 }
 
             } else {
-                System.out.println("No message");
+                Toast.makeText(getApplicationContext(), R.string.action_nfc_error, Toast.LENGTH_LONG);
             }
+
+        // triggerd from elsewhere: do default
         } else {
             try {
                 doDefaultAction();
-            } catch (IllegalArgumentException e) {
-                Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+            } catch (Exception e) {
+                Toast.makeText(getApplicationContext(), R.string.action_default_unexpected, Toast.LENGTH_LONG).show();
             }
         }
 
         finish();
     }
 
-    private void doAction(NdefMessage message) {
+    private void doAction(NdefMessage message) throws Exception {
         NdefRecord[] records = message.getRecords();
         NdefRecord record = records[0];
-        ActionIdentifier action = SerializationUtils.deserialize(record.getPayload());
+        String data = new String(record.getPayload());
+        ActionIdentifier identifier = ActionIdentifier.fromString(data);
+        toggle(identifier);
     }
 
-    private void doDefaultAction() throws IllegalArgumentException {
+    private void doDefaultAction() throws Exception {
         SharedPreferences prefs = getApplicationContext().getSharedPreferences("nfc", Context.MODE_PRIVATE);
         String aDefault = prefs.getString("default", "");
         if (aDefault.isEmpty()) {
-            Log.d("nfc", "empty");
-            throw new IllegalArgumentException("No NFC default set. Long press on output to set default");
+            Toast.makeText(getApplicationContext(), R.string.action_default_empty, Toast.LENGTH_LONG).show();
+            return;
         }
 
-        String[] split = aDefault.split("_");
-        if (split.length != 3) {
-            Log.d("nfc", "invalid default string");
-            throw new IllegalArgumentException("Illegal NFC default set. Long press on output to reset default");
-        }
-
-        String module = split[0];
-        String address = split[1];
-        String name = split[2];
-        int m = Integer.parseInt(module);
-        int a = Integer.parseInt(address);
-        toggle(m, a);
-        Log.d("nfc", aDefault + " toggled");
-        Toast.makeText(getApplicationContext(), name + " toggled", Toast.LENGTH_SHORT).show();
+        ActionIdentifier identifier = ActionIdentifier.fromString(aDefault);
+        toggle(identifier);
     }
 
-    private void toggle(int module, int address) {
+    private void toggle(ActionIdentifier identifier) {
         try {
             Connection c = new Connection();
             c.openConnection();
-            c.toggleOutput(module, address);
+            if (identifier.getModule() != -1) {
+                c.toggleOutput(identifier.getModule(), identifier.getAddress());
+                byte[][] status = c.getStatus();
+                byte toggleStatus = status[identifier.getModule() - 1][identifier.getAddress()];
+
+                String on = getApplicationContext().getString(R.string.widget_state_on);
+                String off = getApplicationContext().getString(R.string.widget_state_off);
+                String toastText = getApplicationContext().getString(R.string.widget_toggle_toast, identifier.getName(), toggleStatus == 1 ? on : off);
+                Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_SHORT).show();
+            } else {
+                c.toggleMood(identifier.getAddress());
+                String toastText = getApplicationContext().getString(R.string.widget_mood_toast, identifier.getName());
+                Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_SHORT).show();
+            }
+
         } catch (Exception e) {
-            Log.d("error", e.getMessage());
+            Toast.makeText(getApplicationContext(), R.string.action_default_unexpected, Toast.LENGTH_LONG);
         }
     }
 }

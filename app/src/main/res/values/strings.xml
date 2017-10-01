@@ -42,5 +42,17 @@
         <item>Set as default action</item>
         <item>Write to NFC tag</item>
     </array>
+    <string name="item_action_default">Default action set to %1$s</string>
+    <string name="intent.nfc_invalidData">No or invalid data passed, returning</string>
+    <string name="nfc.dialog_title">Touch tag to write</string>
+    <string name="nfc.dialog_message">Touch tag</string>
+    <string name="nfc.dialog_cancel">Cancel</string>
+    <string name="nfc.write_success">Action written to NFC: %1$s</string>
+    <string name="nfc.write_notWritable">Error: tag not writable</string>
+    <string name="nfc.write_toSmall">Error: tag is too small</string>
+    <string name="nfc.write_error">Error: unable to write tag</string>
+    <string name="action.nfc_error">NFC data is invalid</string>
+    <string name="action.default_empty">No default action set</string>
+    <string name="action.default_unexpected">An unexpected error occured</string>
 
 </resources>

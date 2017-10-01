@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,6 +31,7 @@ import java.util.List;
 import be.jochems.sven.domotica.connection.ActionHelper;
 import be.jochems.sven.domotica.Domotica;
 import be.jochems.sven.domotica.R;
+import be.jochems.sven.domotica.data.ActionIdentifier;
 import be.jochems.sven.domotica.data.ActionInterface;
 import be.jochems.sven.domotica.data.Group;
 import be.jochems.sven.domotica.data.Mood;
@@ -178,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
                 switch (position) {
                     case 0:
                         setNfcDefault(item);
-                        System.out.println("Set as default");
                         break;
                     case 1:
                         writeNfcTag(item);
@@ -193,27 +194,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setNfcDefault(ActionInterface item) {
-        int module;
-        if (item instanceof Output) {
-            Output o = (Output) item;
-            module = o.getModule().getAddress();
+        // Save default action to shared preferences
 
-        } else if (item instanceof Mood) {
-            //todo: mood object standard on module -1?
-            module = -1;
-        } else {
-            return;
-        }
-
-        String pref = "" + module + "_" + item.getAddress() + "_" + item.getName();
+        ActionIdentifier identifier = item.getIdentifier();
+        String pref = identifier.toString();
 
         SharedPreferences prefs = getApplicationContext().getSharedPreferences("nfc", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
         editor.putString("default", pref);
         editor.apply();
-        //todo: translation
-        Toast.makeText(getApplicationContext(), "NFC default set: " + item.getName(), Toast.LENGTH_LONG).show();
+
+        String toastText = getApplicationContext().getString(R.string.item_action_default, identifier.getName());
+        Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_LONG).show();
     }
 
     private void writeNfcTag(ActionInterface item) {
